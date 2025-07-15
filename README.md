@@ -21,7 +21,7 @@ The following instructions use uv for building systhetmic from source.
     git clone https://github.com/synthetic-microstructures/synthetmic
     ```
 
-1. Navigate to ./synthetmic, create a python virtual environment by running
+1. Create a python virtual environment by running
 
     ```
      uv venv .venv --python PYTHON_VERSION
