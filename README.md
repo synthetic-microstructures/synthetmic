@@ -80,7 +80,7 @@ To run all tests, run
 pytest -v tests
 ```
 
-## TODO:
+## To do:
     - add information about the package to readme
     - update information in the pyproject.toml file
     - add more methods to the base generator: get_vertices(), etc.
