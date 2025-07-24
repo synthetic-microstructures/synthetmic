@@ -4,7 +4,7 @@ import numpy as np
 
 from examples.utils import RecreateData
 from synthetmic import LaguerreDiagramGenerator
-from synthetmic.plot import plot_cells3d
+from synthetmic.plot import plot_cells_as_pyvista_fig
 
 
 def create_layered_points(
@@ -116,12 +116,13 @@ def recreate_fig12(save_path: str, is_periodic: bool, interactive: bool) -> None
     ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
     ldg.fit(**asdict(data))
 
-    plot_cells3d(
-        ldg.optimal_transport_,
-        titlestr=None,
+    plot_cells_as_pyvista_fig(
+        generator=ldg,
+        title=None,
         colorby=data.volumes,
         save_path=save_path,
         interactive=interactive,
+        include_slices=True,
     )
 
     return None
@@ -136,12 +137,13 @@ def recreate_fig13(save_path: str, is_periodic: bool, interactive: bool) -> None
     ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
     ldg.fit(**asdict(data))
 
-    plot_cells3d(
-        ldg.optimal_transport_,
-        titlestr=None,
+    plot_cells_as_pyvista_fig(
+        generator=ldg,
+        title=None,
         colorby=data.volumes,
         save_path=save_path,
         interactive=interactive,
+        include_slices=True,
     )
 
     return None

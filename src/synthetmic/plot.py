@@ -1,32 +1,61 @@
 import tempfile
-from typing import Any
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pyvista as pv
 import vtk
-from matplotlib import cm
-from pysdot import OptimalTransport
+from matplotlib import cm, colormaps
+from matplotlib.axes import Axes
 from vtk.numpy_interface import dataset_adapter as dsa
 from vtk.util.numpy_support import vtk_to_numpy
 
+from synthetmic import LaguerreDiagramGenerator
 
-def plot_cells2d(
-    optimal_transport: OptimalTransport,
-    ax: Any | None = None,
-    titlestr: str | None = None,
+
+def plot_2dcells_as_matplotlib_fig(
+    generator: LaguerreDiagramGenerator,
+    ax: Axes | None = None,
+    title: str | None = None,
     colorby: np.ndarray | list[float] | None = None,
-    cmap: Any | None = cm.plasma,
-) -> None:
+    colormap: str = "plasma",
+    save_path: str | None = None,
+) -> Axes:
+    """
+    A function that plots a 2D Laguerre cells as matplotlib figure.
+
+    Parameters
+    ----------
+
+    generator : LaguerreDiagramGenerator
+        a fitted LaguerreDiagramGenerator object.
+    axis : Axis, optional
+        a matplotlib axis object to handle the figure, if None, a new one will be created
+    title : str or None, optional
+        title of the figure.
+    colorby : ndarray or list, shape (N,), optional
+        a 1d array of scalars for coloring the cells, if None, the cells will be colored
+        by their respective volume.
+    colormap: str, optional
+        a string representing one of the supported colormaps in the matplotlib library.
+    save_path: str or None
+        a string reperesenting the path to save the generated figure to, e.g., ./plots/figure2.pdf.
+        If None, figure will not be saved.
+
+    Returns
+    -------
+
+    ax : matplotlib Axes object
+    """
     with tempfile.NamedTemporaryFile(mode="w", suffix=".vtk", delete=True) as tmp_file:
         filename = tmp_file.name
 
-        optimal_transport.pd.display_vtk(filename)
+        generator.diagram_to_vtk(filename)
 
         reader = vtk.vtkUnstructuredGridReader()
         reader.SetFileName(filename)
         reader.Update()
+
         data = reader.GetOutput()
 
     N = data.GetNumberOfCells()
@@ -49,23 +78,32 @@ def plot_cells2d(
     if ax is None:
         _, ax = plt.subplots()
 
-    if (colorby is not None) and (cmap is not None):
-        norm = mcolors.Normalize(vmin=np.min(colorby), vmax=np.max(colorby))
-        colors = cmap(norm(colorby))
+    if colormap not in list(colormaps):
+        raise ValueError(
+            f"Invalid colormap string: {colormap}. Value must be one of the following: {', '.join(list(colormaps))}"
+        )
 
-        idx = 0
-        for k in range(N):
-            nv = cells[idx]
-            vidx = cells[idx + 1 : idx + nv + 1]
-            idx = idx + nv + 1
+    if colorby is None:
+        # default to coloring cells by their volumes
+        colorby = generator.get_fitted_volumes()
 
-            ax.fill(
-                verts[vidx, 0],
-                verts[vidx, 1],
-                color=colors[cell_numbers[k]],
-                linewidth=1,
-                alpha=0.7,
-            )
+    cmap = cm.get_cmap(colormap)
+    norm = mcolors.Normalize(vmin=np.min(colorby), vmax=np.max(colorby))
+    colors = cmap(norm(colorby))
+
+    idx = 0
+    for k in range(N):
+        nv = cells[idx]
+        vidx = cells[idx + 1 : idx + nv + 1]
+        idx = idx + nv + 1
+
+        ax.fill(
+            verts[vidx, 0],
+            verts[vidx, 1],
+            color=colors[cell_numbers[k]],
+            linewidth=1,
+            alpha=0.7,
+        )
 
     idx = 0
     for k in range(N):
@@ -74,81 +112,130 @@ def plot_cells2d(
         idx = idx + nv + 1
         ax.plot(verts[vidx, 0], verts[vidx, 1], "k", linewidth=1)
 
-    if titlestr is not None:
-        ax.set_title(titlestr)
-
-    return None
-
-
-def plot_cells3d(
-    optimal_transport: OptimalTransport,
-    window_size: tuple[int, int] = (1024, 768),
-    notebook: bool = False,
-    titlestr: str | None = None,
-    colorby: np.ndarray | list[float] | None = None,
-    save_path: str | None = None,
-    interactive: bool = False,
-) -> None:
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".vtk", delete=True) as tmp_file:
-        filename = tmp_file.name
-
-        optimal_transport.pd.display_vtk(filename)
-
-        otgrid = pv.read(filename)
-
-    # Store the volumes in an array
-    if colorby is None:
-        colorby = optimal_transport.pd.integrals()
-
-    # Specify the colours
-    # create cell data that gives the cell volumes, this allows us to colour by cell volumes
-    otcell_col = colorby[otgrid.cell_data["num"].astype(int)]
-    otgrid.cell_data["vols"] = otcell_col
-
-    N_ROW, N_COL = 2, 3
-    otplotter = pv.Plotter(
-        off_screen=True,
-        window_size=list(window_size),
-        notebook=notebook,
-        title=titlestr,
-        shape=(N_ROW, N_COL),
-    )
-
-    meshes = (
-        otgrid,
-        otgrid.slice_orthogonal(),
-        otgrid.slice_along_axis(n=2, axis="x"),
-        otgrid.slice_along_axis(axis="x"),
-        otgrid.slice_along_axis(axis="y"),
-        otgrid.slice_along_axis(axis="z"),
-    )
-
-    c = 0
-    for i in range(N_ROW):
-        for j in range(N_COL):
-            otplotter.subplot(i, j)
-            otplotter.add_mesh(
-                meshes[c],
-                show_edges=True,
-                show_scalar_bar=False,
-            )
-
-            c += 1
-
-    otplotter.link_views()
-    otplotter.view_isometric()
-
-    if interactive:
-        otplotter.show_axes()
-        otplotter.add_scalar_bar(vertical=False)
-
-    # Add a headlight
-    light = pv.Light(light_type="headlight")
-    otplotter.add_light(light)
+    if title is not None:
+        ax.set_title(title)
 
     if save_path is not None:
-        otplotter.export_html(save_path) if interactive else otplotter.save_graphic(
+        ax.axis("off")
+        ax.set_aspect("equal")
+
+        plt.savefig(save_path, bbox_inches="tight")
+
+    return ax
+
+
+def plot_cells_as_pyvista_fig(
+    generator: LaguerreDiagramGenerator,
+    window_size: tuple[int, int] = (1024, 768),
+    notebook: bool = False,
+    title: str | None = None,
+    colorby: np.ndarray | list[float] | None = None,
+    colormap: str = "plasma",
+    save_path: str | None = None,
+    interactive: bool = False,
+    include_slices: bool = False,
+) -> pv.Plotter:
+    """
+    A function that plots Laguerre cells (both 2D and 3D) as pyvista figure.
+
+    Parameters
+    ----------
+
+    generator : LaguerreDiagramGenerator
+        a fitted LaguerreDiagramGenerator object.
+    window_size : tuple[int, int], optional
+        the figure size.
+    notebook : bool, optional
+        when True, the resulting plot is placed inline a jupyter notebook. Assumes a jupyter console is active.
+        Automatically enables off_screen.
+    title : str or None, optional
+        title of the figure.
+    colorby : ndarray or list, shape (N,), optional
+        a 1d array of scalars for coloring the cells, if None, the cells will be colored
+        by their respective volume.
+    colormap: str, optional
+        a string representing one of the supported colormaps in the matplotlib library.
+    save_path: str or None
+        a string reperesenting the path to save the generated figure to, e.g., ./plots/figure2.pdf.
+        If None, figure will not be saved.
+    interactive : bool, optional
+        when True, figure will be saved as html. This requires you provide save_path and ensure that
+        the file name has .html extension.
+    include_slices : bool, optional
+        when True, include othorgonal slice and slices along the axes coordinates to the figure.
+
+    Returns
+    -------
+
+    plotter : pyvista Plotter object
+    """
+    mesh = generator.get_mesh()
+
+    if colorby is None:
+        colorby = generator.get_fitted_volumes()
+
+    # create cell data that gives the cell volumes, this allows us to colour by cell volumes
+    mesh.cell_data["vols"] = colorby[mesh.cell_data["num"].astype(int)]
+
+    if colormap not in list(colormaps):
+        raise ValueError(
+            f"Invalid colormap string: {colormap}. Value must be one of the following: {', '.join(list(colormaps))}"
+        )
+
+    if include_slices:
+        N_ROW, N_COL = 2, 3
+        plotter = pv.Plotter(
+            off_screen=True,
+            window_size=list(window_size),
+            notebook=notebook,
+            title=title,
+            shape=(N_ROW, N_COL),
+        )
+
+        meshes = (
+            mesh,
+            mesh.slice_orthogonal(),
+            mesh.slice_along_axis(n=2, axis="x"),
+            mesh.slice_along_axis(axis="x"),
+            mesh.slice_along_axis(axis="y"),
+            mesh.slice_along_axis(axis="z"),
+        )
+
+        c = 0
+        for i in range(N_ROW):
+            for j in range(N_COL):
+                plotter.subplot(i, j)
+                plotter.add_mesh(
+                    meshes[c],
+                    show_edges=True,
+                    show_scalar_bar=False,
+                )
+
+                c += 1
+
+        plotter.link_views()
+        plotter.view_isometric()
+
+    else:
+        plotter = pv.Plotter(
+            off_screen=True,
+            window_size=list(window_size),
+            notebook=notebook,
+            title=title,
+        )
+        plotter.add_mesh(
+            mesh,
+            show_edges=True,
+            show_scalar_bar=False,
+        )
+
+    if interactive:
+        plotter.show_axes()
+        plotter.add_scalar_bar(vertical=False)
+
+    if save_path is not None:
+        plotter.export_html(save_path) if interactive else plotter.save_graphic(
             save_path
         )
 
-    return None
+    return plotter

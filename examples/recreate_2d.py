@@ -12,7 +12,7 @@ from examples.utils import (
     set_fig_size,
 )
 from synthetmic import LaguerreDiagramGenerator
-from synthetmic.plot import plot_cells2d
+from synthetmic.plot import plot_2dcells_as_matplotlib_fig
 
 plt.rcParams.update(get_rcparams())
 
@@ -274,7 +274,9 @@ def recreate_fig1(save_path: str) -> None:
     ldg.fit(**asdict(data))
 
     _, ax = plt.subplots(figsize=set_fig_size())
-    plot_cells2d(ldg.optimal_transport_, ax=ax, titlestr=None, colorby=data.volumes)
+    ax = plot_2dcells_as_matplotlib_fig(
+        generator=ldg, ax=ax, title=None, colorby=data.volumes
+    )
 
     positions = ldg.optimal_transport_.get_positions()
     ax.scatter(positions[:, 0], positions[:, 1], color="black", s=5)
@@ -311,15 +313,15 @@ def recreate_fig2(save_path: str) -> None:
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=n_iter)
         ldg.fit(**asdict(data))
 
-        plot_cells2d(
-            ldg.optimal_transport_,
+        ax = plot_2dcells_as_matplotlib_fig(
+            generator=ldg,
             ax=ax,
-            titlestr=f"$k={n_iter}$",
+            title=f"$k={n_iter}$",
             colorby=data.volumes,
         )
 
-        positions = ldg.optimal_transport_.get_positions()
-        ax.scatter(positions[:, 0], positions[:, 1], color="black", s=5)
+        centroids = ldg.get_centroids()
+        ax.scatter(centroids[:, 0], centroids[:, 1], color="black", s=5)
 
         ax.axis("off")
         ax.set_aspect("equal")
@@ -354,10 +356,10 @@ def recreate_fig4(save_path: str) -> None:
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
         ldg.fit(**asdict(data))
 
-        plot_cells2d(
-            ldg.optimal_transport_,
+        plot_2dcells_as_matplotlib_fig(
+            generator=ldg,
             ax=ax,
-            titlestr=f"{init.replace('_', ' ').capitalize()}",
+            title=f"{init.replace('_', ' ').capitalize()}",
             colorby=data.volumes,
         )
 
@@ -394,10 +396,10 @@ def recreate_fig5(save_path: str) -> None:
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
         ldg.fit(**asdict(data))
 
-        plot_cells2d(
-            ldg.optimal_transport_,
+        plot_2dcells_as_matplotlib_fig(
+            generator=ldg,
             ax=ax,
-            titlestr=f"{gradient.replace('_', ' ').capitalize()}",
+            title=f"{gradient.replace('_', ' ').capitalize()}",
             colorby=data.volumes,
         )
 
