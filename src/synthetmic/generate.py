@@ -1,8 +1,10 @@
 import itertools
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pyvista as pv
 from pysdot import OptimalTransport
 from pysdot.domain_types import ConvexPolyhedraAssembly
 
@@ -215,39 +217,69 @@ class LaguerreDiagramGenerator:
 
         return self.optimal_transport_.pd.integrals()
 
+    def get_mesh(self) -> pv.PolyData | pv.UnstructuredGrid:
+        """Get the underlying mesh as a pyvista PolyData or UnstructuredGrid data object."""
+
+        self._ensure_fitted()
+
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".vtk", delete=True
+        ) as tmp_file:
+            filename = tmp_file.name
+
+            self.optimal_transport_.pd.display_vtk(
+                filename, points=None, centroids=None
+            )
+
+            mesh = pv.read(filename)
+
+        return mesh
+
+    def get_positions(self) -> np.ndarray:
+        """Get the final positions of initial seeds used for generating the laguerre diagram."""
+
+        self._ensure_fitted()
+
+        return self.optimal_transport_.pd.get_positions()
+
     def get_centroids(self) -> np.ndarray:
-        """Get the centroids of the cells in the power diagram."""
+        """Get the centroids of the cells in the laguerre diagram."""
 
         self._ensure_fitted()
 
         return self.optimal_transport_.pd.centroids()
 
     def get_vertices(self) -> np.ndarray:
-        """Get the vertices of the cells in the power diagram."""
+        """Get the vertices of the cells in the laguerre diagram."""
+
+        mesh = self.get_mesh()
+
+        return np.array(mesh.extract_surface().points)
+
+    def get_weights(self) -> np.ndarray:
+        """Get the weights of the laguerre diagram."""
 
         self._ensure_fitted()
 
-        # TODO: implement this method correctly.
+        return self.optimal_transport_.pd.get_weights()
 
-        raise NotImplementedError("Not implemented yet")
-
-    def get_vtk_mesh_data(self, shrink_factor: float = 0.0) -> Any:
-        # TODO: implement this method correctly.
-
-        self._ensure_fitted()
-
-        return self.optimal_transport_.pd.vtk_mesh_data(shrink_factor=shrink_factor)
-
-    def diagram_to_vtk(
-        self, filename: str | Path, points: bool = False, centroids: bool = False
-    ) -> None:
-        """Write the generated diagram to .vkt file"""
-        # TODO: document the args.
+    def diagram_to_vtk(self, filename: str | Path) -> None:
+        """Write the generated diagram to .vkt file; filename must ends with .vtk."""
 
         self._ensure_fitted()
 
         self.optimal_transport_.pd.display_vtk(
-            filename=filename, points=points, centroids=centroids
+            filename=filename, points=False, centroids=False
         )
 
         return None
+
+    def get_params(self) -> dict[str, Any]:
+        """Get the parameters of this instance as a dictionary."""
+
+        return dict(
+            tol=self.tol,
+            n_iter=self.n_iter,
+            damp_param=self.damp_param,
+            verbose=self.verbose,
+        )

@@ -5,7 +5,8 @@ from pysdot import OptimalTransport
 
 from examples.analyse import create_example5p1_data
 from examples.utils import RecreateData
-from synthetmic.generate import LaguerreDiagramGenerator
+from synthetmic import LaguerreDiagramGenerator
+from synthetmic.utils import NotFittedError
 
 
 @pytest.fixture
@@ -35,3 +36,9 @@ def test_output_dim(fixture_data) -> None:
 
     assert ldg.get_centroids().shape == fixture_data.seeds.shape
     assert ldg.get_fitted_volumes().shape == fixture_data.volumes.shape
+
+
+def test_ensure_fit() -> None:
+    with pytest.raises(NotFittedError):
+        ldg = LaguerreDiagramGenerator()
+        ldg.get_centroids()
