@@ -11,7 +11,8 @@ To install the latest version of the package via `pip`, run
     > uv add synthetmic
 
 ## Usage
-To use this packahe for generating synthetic microstructures, you would need to import the generator class as follows:
+To use this package for generating synthetic microstructures, you would need to import the generator class as follows:
+
     ```python
     from synthetmic import LaguerreDiagramGenerator
     ```
