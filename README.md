@@ -12,10 +12,9 @@ To install the latest version of the package via `pip`, run
 
 ## Usage
 To use this package for generating synthetic microstructures, you would need to import the generator class as follows:
-
-    ```python
-    from synthetmic import LaguerreDiagramGenerator
-    ```
+```python
+from synthetmic import LaguerreDiagramGenerator
+```
 
 Create an instance of the class with the default arguments:
     ```python
