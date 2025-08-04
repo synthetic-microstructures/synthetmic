@@ -23,10 +23,10 @@ generator = LaguerreDiagramGenerator()
 or with custom parameters:
 ```python
 generator = LaguerreDiagramGenerator(
-                    tol=0.1,
-                    n_iter=5,
-                    damp_param=1.0,
-                    verbose=True,
+                tol=0.1,
+                n_iter=5,
+                damp_param=1.0,
+                verbose=True,
 )
 ```
 
@@ -158,15 +158,20 @@ To run all tests, run
 pytest -v tests
 ```
 
-## To do:
-    - add information about the package to readme
-    - update information in the pyproject.toml file
-    - add more methods to the base generator: get_vertices(), etc.
-    - add workflow for publishing package to pypi; when creating
-    the project on PyPI, [create with trusted publisher](https://docs.pypi.org/trusted-publishers/creating-a-project-through-oidc/). You can use your account for this.
-
 ## References
-Coming soon stay stuned!
-
-## Contributing
-Coming soon stay stuned!
+If you use this package in your research, please refer to the link to this project. Additionally, cite the paper that backs the the implemented algorithms as follows:
+```bibtex
+@article{Bourne01112020,
+author = {D. P. Bourne and P. J. J. Kok and S. M. Roper and W. D. T. Spanjer},
+title = {Laguerre tessellations and polycrystalline microstructures: a fast algorithm for generating grains of given volumes},
+journal = {Philosophical Magazine},
+volume = {100},
+number = {21},
+pages = {2677--2707},
+year = {2020},
+publisher = {Taylor \& Francis},
+doi = {10.1080/14786435.2020.1790053},
+URL = {https://doi.org/10.1080/14786435.2020.1790053},
+eprint = {https://doi.org/10.1080/14786435.2020.1790053}
+}
+```
