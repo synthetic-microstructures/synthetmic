@@ -5,7 +5,12 @@ from enum import StrEnum, auto
 import matplotlib.pyplot as plt
 import numpy as np
 
-from examples.utils import RecreateData, get_rcparams
+from examples.utils import (
+    RecreateData,
+    create_periodicity,
+    get_rcparams,
+    sample_random_seeds,
+)
 from synthetmic import LaguerreDiagramGenerator
 
 plt.rcParams.update(get_rcparams())
@@ -28,20 +33,14 @@ def calulate_rel_vols(n1: int, n2: int, r: int) -> np.ndarray:
 
 
 def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> RecreateData:
-    # Define the box size
     L1, L2, L3 = 100, 100, 100
 
-    # Define the box
     domain = np.array([[0, L1], [0, L2], [0, L3]])
     domain_vol = np.prod(domain[:, 1] - domain[:, 0])
 
-    # Set the periodicity in the three directions
-    periodic = [True] * 3 if is_periodic else None
+    periodic = create_periodicity(domain.shape[0], is_periodic)
 
-    X = (
-        np.random.rand(n_grains, 3) @ np.diag(domain[:, 1] - domain[:, 0])
-        + domain[:, 0]
-    )
+    X = sample_random_seeds(domain, n_grains)
     target_vols = domain_vol * calulate_rel_vols(n_grains // 2, n_grains // 2, r)
 
     return RecreateData(
@@ -79,9 +78,9 @@ def recreate_figure6(save_path: str, is_periodic: bool) -> None:
             duration = end - start
 
             print(
-                f" * completed in {duration:.4f} seconds \n"
-                f" * max percentage error = {ldg.max_percentage_error_:.4f}% \n"
-                f" * mean percentage error = {ldg.mean_percentage_error_:.4f}%\n\n"
+                f"\t* completed in {duration:.4f} seconds \n"
+                f"\t* max percentage error = {ldg.max_percentage_error_:.4f}% \n"
+                f"\t* mean percentage error = {ldg.mean_percentage_error_:.4f}%\n\n"
             )
 
             runtimes[r].append(duration)
@@ -138,7 +137,7 @@ def damp_param_effect(is_periodic: bool, save_path: str) -> None:
             ldg.fit(**asdict(data))
 
             print(
-                f" * damp param = {dp:.4f} seconds, max percentage error = {ldg.max_percentage_error_:.4f}%, mean percentage error = {ldg.mean_percentage_error_:.4f}%"
+                f"\t* damp param = {dp:.4f} seconds, max percentage error = {ldg.max_percentage_error_:.4f}%, mean percentage error = {ldg.mean_percentage_error_:.4f}%"
             )
 
             max_percentage_errors[j] = ldg.max_percentage_error_

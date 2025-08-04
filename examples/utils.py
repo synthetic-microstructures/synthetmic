@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import StrEnum, auto
+from typing import Any
 
 import numpy as np
 
@@ -42,7 +43,19 @@ class RecreateData:
     init_weights: np.ndarray | None
 
 
-def get_rcparams():
+def sample_random_seeds(
+    domain: np.ndarray, n_grains: int, random_state: int | None = None
+) -> np.ndarray:
+    return np.column_stack(
+        [np.random.uniform(low=d[0], high=d[1], size=n_grains) for d in domain]
+    )
+
+
+def create_periodicity(space_dim: int, is_periodic: bool) -> list[bool] | None:
+    return [True] * space_dim if is_periodic else None
+
+
+def get_rcparams() -> Any:
     SMALL_SIZE = 9
     MEDIUM_SIZE = 10
     BIGGER_SIZE = 11
@@ -61,10 +74,6 @@ def get_rcparams():
         "font.size": FONT["size"],
         "text.usetex": True,
         "figure.constrained_layout.use": True,
-        # "axes.spines.top": False,
-        # "axes.spines.right": False,
-        # "axes.spines.left": True,
-        # "axes.spines.bottom": True,
         "xtick.bottom": True,
         "ytick.left": True,
         "axes.grid": False,
@@ -78,7 +87,7 @@ def set_fig_size(
     fraction: float = 1.0,
     subplots: tuple = (1, 1),
     adjust_height: float | None = None,
-) -> tuple:
+) -> tuple[float, float]:
     if width == DocType.ARTICLE:
         width_pt = 426.79135
     elif width == DocType.BEAMER:

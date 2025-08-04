@@ -2,7 +2,7 @@ from dataclasses import asdict
 
 import numpy as np
 
-from examples.utils import RecreateData
+from examples.utils import RecreateData, create_periodicity, sample_random_seeds
 from synthetmic import LaguerreDiagramGenerator
 from synthetmic.plot import plot_cells_as_pyvista_fig
 
@@ -39,17 +39,14 @@ def create_layered_points(
 
 
 def create_example5p4_data(is_periodic: bool) -> RecreateData:
-    # Define box size
     L1 = 2
     L2 = 3
     L3 = 2
 
-    # Define box
     domain = np.array([[0, L1], [0, L2], [0, L3]])
     domain_vol = np.prod(domain[:, 1] - domain[:, 0])
 
-    # Set periodicity in the three directions
-    periodic = [True] * 3 if is_periodic else None
+    periodic = create_periodicity(domain.shape[0], is_periodic)
 
     # Number of grains and relative vols
     n_layer_arr = np.array([1000, 8000, 1000])
@@ -66,24 +63,21 @@ def create_example5p4_data(is_periodic: bool) -> RecreateData:
 
 
 def create_example5p5_data(is_periodic: bool) -> RecreateData:
-    # Define box size
     L1 = 2
     L2 = 2
     L3 = 2
 
-    # Define box
     domain = np.array([[0, L1], [0, L2], [0, L3]])
     domain_vol = np.prod(domain[:, 1] - domain[:, 0])
 
     # Set periodicity in the three directions
-    periodic = [True] * 3 if is_periodic else None
+    periodic = create_periodicity(domain.shape[0], is_periodic)
 
     # Number of grains
     N = 10000
 
     # Random initial seed locations
-    X = np.random.rand(N, 3)
-    X = X @ np.diag([L1, L2, L3])
+    X = sample_random_seeds(domain, N)
 
     # Log-normal target volumes
     DESIRED_LN_MEAN = 1

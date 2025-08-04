@@ -8,7 +8,9 @@ from examples.utils import (
     Gradient,
     Initializer,
     RecreateData,
+    create_periodicity,
     get_rcparams,
+    sample_random_seeds,
     set_fig_size,
 )
 from synthetmic import LaguerreDiagramGenerator
@@ -41,22 +43,10 @@ def create_banded_points(
     y = []
     for i, subdomain in enumerate(subdomains):
         if i % 2 == 0:
-            X.extend(
-                np.random.uniform(
-                    low=subdomain.min(axis=1),
-                    high=subdomain.max(axis=1),
-                    size=(n_points_large, 2),
-                ).tolist()
-            )
+            X.extend(sample_random_seeds(subdomain, n_points_large).tolist())
             y.extend([20 * volume_frac] * n_points_large)
         else:
-            X.extend(
-                np.random.uniform(
-                    low=subdomain.min(axis=1),
-                    high=subdomain.max(axis=1),
-                    size=(n_points_small, 2),
-                ).tolist()
-            )
+            X.extend(sample_random_seeds(subdomain, n_points_small).tolist())
             y.extend([volume_frac] * n_points_small)
 
     return X, y
@@ -97,9 +87,7 @@ def sample_points_outside_discs(
     centers_array = np.array(disc_centers)
 
     while len(accepted) < n_points:
-        x_batch = np.random.uniform(rect[0][0], rect[0][1], batch_size)
-        y_batch = np.random.uniform(rect[1][0], rect[1][1], batch_size)
-        points = np.stack((x_batch, y_batch), axis=1)  # shape: (batch_size, 2)
+        points = sample_random_seeds(rect, batch_size)
 
         dists_sq = np.sum(
             (points[:, np.newaxis, :] - centers_array[np.newaxis, :, :]) ** 2, axis=2
@@ -114,7 +102,7 @@ def sample_points_outside_discs(
     return accepted
 
 
-def create_example3_data() -> RecreateData:
+def create_example3_data(is_periodic: bool) -> RecreateData:
     domain = np.array([[0, 1], [0, 1]])
 
     N_GRAINS = 50
@@ -124,16 +112,16 @@ def create_example3_data() -> RecreateData:
     y[:35] = AREA_FRAC
     y[35:] = 10 * AREA_FRAC
 
-    X = np.random.uniform(
-        low=domain.min(axis=1), high=domain.max(axis=1), size=(N_GRAINS, 2)
-    )
+    X = sample_random_seeds(domain, N_GRAINS)
+
+    periodic = create_periodicity(domain.shape[0], is_periodic)
 
     return RecreateData(
-        seeds=X, volumes=y, domain=domain, periodic=None, init_weights=None
+        seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
     )
 
 
-def create_example4_data(initializer: str) -> RecreateData:
+def create_example4_data(initializer: str, is_periodic: bool) -> RecreateData:
     AREA_FRAC = 1 / 800
     N1 = 800
     N2 = 200
@@ -146,11 +134,7 @@ def create_example4_data(initializer: str) -> RecreateData:
             y[:N1] = AREA_FRAC
             y[N1:] = 20 * AREA_FRAC
 
-            X = np.random.uniform(
-                low=domain.min(axis=1),
-                high=domain.max(axis=1),
-                size=(N1 + N2, 2),
-            )
+            X = sample_random_seeds(domain, N1 + N2)
 
         case Initializer.BANDED:
             subdomains = create_subdomains(domain=domain, n_subdomains=7)
@@ -209,13 +193,7 @@ def create_example4_data(initializer: str) -> RecreateData:
             )
 
             # add random N2 / 4 random points for the small cells
-            X.extend(
-                np.random.uniform(
-                    low=domain.min(axis=1),
-                    high=domain.max(axis=1),
-                    size=(n_points_small, 2),
-                ).tolist()
-            )
+            X.extend(sample_random_seeds(domain, n_points_small).tolist())
             y.extend([AREA_FRAC] * n_points_small)
 
             X = np.array(X)
@@ -224,12 +202,14 @@ def create_example4_data(initializer: str) -> RecreateData:
         case _:
             raise ValueError(f"initializer must be one of {', '.join(Initializer)}")
 
+    periodic = create_periodicity(domain.shape[0], is_periodic)
+
     return RecreateData(
-        seeds=X, volumes=y, domain=domain, periodic=None, init_weights=None
+        seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
     )
 
 
-def create_example4b_data(gradient: str) -> RecreateData:
+def create_example4b_data(gradient: str, is_periodic: bool) -> RecreateData:
     if gradient not in Gradient:
         raise ValueError(f"gradient must be one of {', '.join(Gradient)}")
 
@@ -250,9 +230,11 @@ def create_example4b_data(gradient: str) -> RecreateData:
     y_coord = np.random.uniform(low=domain[1][0], high=domain[1][1], size=N)
     X = np.column_stack((x_coord, y_coord))
 
+    periodic = create_periodicity(domain.shape[0], is_periodic)
+
     if gradient == Gradient.INCREASING:
         return RecreateData(
-            seeds=X, volumes=y, domain=domain, periodic=None, init_weights=None
+            seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
         )
 
     y = np.concatenate(
@@ -260,15 +242,15 @@ def create_example4b_data(gradient: str) -> RecreateData:
     )  # ensure the large areas fall in the middle and small areas fall at the ends
 
     return RecreateData(
-        seeds=X, volumes=y, domain=domain, periodic=None, init_weights=None
+        seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
     )
 
 
-def recreate_fig1(save_path: str) -> None:
+def recreate_fig1(save_path: str, is_periodic: bool) -> None:
     TOL = 1e-2
     N_ITER = None
 
-    data = create_example3_data()
+    data = create_example3_data(is_periodic)
 
     ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
     ldg.fit(**asdict(data))
@@ -278,7 +260,7 @@ def recreate_fig1(save_path: str) -> None:
         generator=ldg, ax=ax, title=None, colorby=data.volumes
     )
 
-    positions = ldg.optimal_transport_.get_positions()
+    positions = ldg.get_positions()
     ax.scatter(positions[:, 0], positions[:, 1], color="black", s=5)
 
     ax.axis("off")
@@ -289,8 +271,8 @@ def recreate_fig1(save_path: str) -> None:
     return None
 
 
-def recreate_fig2(save_path: str) -> None:
-    data = create_example3_data()
+def recreate_fig2(save_path: str, is_periodic: bool) -> None:
+    data = create_example3_data(is_periodic)
 
     ITERATIONS = (1, 2, 3, 4, 5, 10, 25, 50, 100)
     TOL = 1e-2
@@ -331,7 +313,7 @@ def recreate_fig2(save_path: str) -> None:
     return None
 
 
-def recreate_fig4(save_path: str) -> None:
+def recreate_fig4(save_path: str, is_periodic: bool) -> None:
     N_ITER = 20
     TOL = 1e-2
 
@@ -351,7 +333,7 @@ def recreate_fig4(save_path: str) -> None:
             va="top",
         )
 
-        data = create_example4_data(init)
+        data = create_example4_data(init, is_periodic)
 
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
         ldg.fit(**asdict(data))
@@ -371,7 +353,7 @@ def recreate_fig4(save_path: str) -> None:
     return None
 
 
-def recreate_fig5(save_path: str) -> None:
+def recreate_fig5(save_path: str, is_periodic: bool) -> None:
     N_ITER = 20
     TOL = 1e-2
 
@@ -391,7 +373,7 @@ def recreate_fig5(save_path: str) -> None:
             va="top",
         )
 
-        data = create_example4b_data(gradient)
+        data = create_example4b_data(gradient, is_periodic)
 
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
         ldg.fit(**asdict(data))
