@@ -17,70 +17,70 @@ from synthetmic import LaguerreDiagramGenerator
 ```
 
 Create an instance of the class with the default arguments:
-    ```python
-    generator = LaguerreDiagramGenerator()
-    ```
+```python
+generator = LaguerreDiagramGenerator()
+```
 or with custom parameters:
-    ```python
-    generator = LaguerreDiagramGenerator(
+```python
+generator = LaguerreDiagramGenerator(
                     tol=0.1,
                     n_iter=5,
                     damp_param=1.0,
                     verbose=True,
-    )
-    ```
+)
+```
 
 Next is to fit this class to some data by calling the `fit` method. To this end, we will create random seeds and sample constant volumes in the domain [0, 2] x [0, 2] x [0, 3] as follows:
-    ```python
-    import numpy as np
+```python
+import numpy as np
     
-    domain = np.array([[0, 1] * 3])
-    domain_vol = np.prod(domain[:, 1] - domain[:, 0])
+domain = np.array([[0, 1] * 3])
+domain_vol = np.prod(domain[:, 1] - domain[:, 0])
     
-    n_grains = 1000
+n_grains = 1000
     
-    seeds = np.column_stack(
+seeds = np.column_stack(
         [np.random.uniform(low=d[0], high=d[1], size=n_grains) for d in domain]
-    )
-    volumes = (np.ones(n_grains) / n_grains) * domain_vol
+)
+volumes = (np.ones(n_grains) / n_grains) * domain_vol
     
-    # call the fit method on data
-    generator.fit(
+# call the fit method on data
+generator.fit(
         seeds=seeds,
         volumes=volumes,
         domain=domain,
-    )
-    ```
+)
+```
 
 After calling the fit method, you can use the instance to get various things, e.g., get the centroids and vertices of the cells:
-    ```python
-    centroids = generator.get_centroids()
-    vertices = generator.get_vertices()
+```python
+centroids = generator.get_centroids()
+vertices = generator.get_vertices()
     
-    print("diagram centroids:\n", centroids)
-    print("diagram vertices:\n", vertices)
-    ```
+print("diagram centroids:\n", centroids)
+print("diagram vertices:\n", vertices)
+```
 
 In fact you can plot the diagram in static or interactive mode by using the fitted instance:
-    ```python
-    from synthetmic.plot import plot_cells_as_pyvista_fig
-    plot_cells_as_pyvista_fig(
+```python
+from synthetmic.plot import plot_cells_as_pyvista_fig
+plot_cells_as_pyvista_fig(
         generator=generator,
         interactive=True,
         save_path="./example_diagram.html",
-    )
-    ```
+)
+```
 
 The generated HTML file can be viewed via any browser of your choice.
 
 If you prefer a static figure, turn off interactive and save figure as pdf (can also be saved as png or jpeg):
-    ```python
-    plot_cells_as_pyvista_fig(
+```python
+plot_cells_as_pyvista_fig(
         generator=generator,
         interactive=False,
         save_path="./example_diagram.pdf",
     )
-    ```
+```
 
 To see more usage examples, see the `examples` folder or check below on how to run them via `cli.py`.
 
