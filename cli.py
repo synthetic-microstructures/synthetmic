@@ -51,7 +51,15 @@ def entry() -> None:
     interative mode. Note: this only works for 3d examples.
     """,
 )
-def recreate(example: str, save_dir: str, interactive: bool) -> None:
+@click.option(
+    "--periodic",
+    "-p",
+    is_flag=True,
+    help="""Give this flag if you want the generated figure to be periodic in all 
+    directions.
+    """,
+)
+def recreate(example: str, save_dir: str, interactive: bool, periodic: bool) -> None:
     """
     Recreate figures in the source paper.
     """
@@ -61,21 +69,20 @@ def recreate(example: str, save_dir: str, interactive: bool) -> None:
             (recreate_fig1, recreate_fig2, recreate_fig4, recreate_fig5),
             ("figure1", "figure2", "figure4", "figure5"),
         ):
-            fn(save_path=f"{save_dir}/{sn}.pdf")
+            fn(save_path=f"{save_dir}/{sn}.pdf", is_periodic=periodic)
 
-    def three_d_example():
+        return None
+
+    def three_d_example() -> None:
         ext = "html" if interactive else "pdf"
         for fn, sn in zip((recreate_fig12, recreate_fig13), ("figure12", "figure13")):
             fn(
                 save_path=f"{save_dir}/{sn}.{ext}",
-                is_periodic=False,
+                is_periodic=periodic,
                 interactive=interactive,
             )
-            fn(
-                save_path=f"{save_dir}/{sn}_periodic.{ext}",
-                is_periodic=True,
-                interactive=interactive,
-            )
+
+        return None
 
     click.echo(
         color_text(
@@ -149,20 +156,26 @@ def recreate(example: str, save_dir: str, interactive: bool) -> None:
     show_default=True,
     help="The dir to save the generated figures.",
 )
-def analyse(analysis: str, save_dir: str) -> None:
+@click.option(
+    "--periodic",
+    "-p",
+    is_flag=True,
+    help="""Give this flag if you want the box or domain to be periodic in all 
+    directions.
+    """,
+)
+def analyse(analysis: str, save_dir: str, periodic: bool) -> None:
     """
     Analyse the performance of the algorithms developed in the source paper.
     """
 
     def runtime() -> None:
-        for sn, ip in zip(("figure6", "figure6_periodic"), (False, True)):
-            recreate_figure6(save_path=f"./{save_dir}/{sn}.pdf", is_periodic=ip)
+        recreate_figure6(save_path=f"./{save_dir}/figure6.pdf", is_periodic=periodic)
 
     def damp() -> None:
-        for sn, ip in zip(
-            ("damp_param_effect", "damp_param_effect_periodic"), (False, True)
-        ):
-            damp_param_effect(save_path=f"./{save_dir}/{sn}.pdf", is_periodic=ip)
+        damp_param_effect(
+            save_path=f"./{save_dir}/damp_param_effect.pdf", is_periodic=periodic
+        )
 
     click.echo(
         color_text(

@@ -4,13 +4,12 @@ version = "0.1.0"
 description = "A Python package for generating synthetic Laguerre polycrystalline microstructures"
 readme = "README.md"
 authors = [
+    { name = "R. O. Ibraheem", email = "ibraheem.abdulrasheed@gmail.com" },
     { name = "D. P. Bourne", email = "D.Bourne@hw.ac.uk" },
-    { name = "P. J. J. Kok", email = "xxxx@gmail.com" },
     { name = "S. M. Roper", email = "Steven.Roper@glasgow.ac.uk" },
-    { name = "W. D. T. Spanjer", email = "xxxx@gmail.com" }
 ]
 maintainers = [
-    { name = "Rasheed Ibraheem", email = "R.Ibraheem@hw.ac.uk" },
+    { name = "R. O. Ibraheem", email = "ibraheem.abdulrasheed@gmail.com" },
     { name = "D. P. Bourne", email = "D.Bourne@hw.ac.uk" },
     { name = "S. M. Roper", email = "Steven.Roper@glasgow.ac.uk" }
 ]

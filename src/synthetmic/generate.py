@@ -1,7 +1,7 @@
 import itertools
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import numpy as np
 import pyvista as pv
@@ -73,7 +73,7 @@ class LaguerreDiagramGenerator:
         domain: np.ndarray,
         periodic: list[bool] | None = None,
         init_weights: np.ndarray | None = None,
-    ) -> OptimalTransport:
+    ) -> Self:
         """This function implements Algorithm 1 and 2 from the following paper:
 
         Bourne, D.P., Kok, P.J.J., Roper, S.M. & Spanjer, W.D.T. (2020)
@@ -102,9 +102,7 @@ class LaguerreDiagramGenerator:
         Returns
         -------
 
-        optimal_transport : OptimalTransport object
-            This contains the weights of the Laguerre tessellation with cells of
-            volumes target_vols (up to tolerance tol)
+        self
 
         """
 
