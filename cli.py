@@ -15,7 +15,6 @@ def color_text(text: str, color: str = "green", bold: bool = False) -> str:
     return click.style(text=text, fg=color, bold=bold)
 
 
-# TODO: add --periodic flag to commands.
 @click.group()
 def entry() -> None:
     """A cli for running various examples and analyses.
