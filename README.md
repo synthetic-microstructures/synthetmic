@@ -1,4 +1,4 @@
-# SynthetMic
+# Synthet**M**ic
 A Python package for generating synthetic Laguerre polycrystalline microstructures, powered by [pysdot](https://github.com/sd-ot/pysdot).
 
 ## Installation
@@ -11,7 +11,7 @@ pip install synthetmic
 > uv add synthetmic
 
 ## Usage
-To use this package for generating synthetic microstructures, you would need to import the generator class as follows:
+To use this package to generate synthetic microstructures, you need to import the generator class as follows:
 ```python
 from synthetmic import LaguerreDiagramGenerator
 ```
