@@ -34,7 +34,7 @@ We can fit this class to some data by calling the `fit` method. For example, we 
 ```python
 import numpy as np
     
-domain = np.array([[0, 1] * 3])
+domain = np.array([[0, 1],[0, 1],[0, 1]])
 domain_vol = np.prod(domain[:, 1] - domain[:, 0])
     
 n_grains = 1000
