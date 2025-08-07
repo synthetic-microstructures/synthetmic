@@ -91,7 +91,7 @@ If you would like to build this project from source either for development purpo
 
 If you don't want to use uv, you can use other alternatives like [pip](https://pip.pypa.io/en/stable/).
 
-The following instructions use uv for building systhetmic from source.
+The following instructions use uv for building synthetmic from source.
 
 1. Clone the repository by running
 
@@ -136,9 +136,7 @@ python cli.py COMMAND --help
 ```
 where `COMMAND` is any of the commands.
 
-Running a command with its appropriate args is simple.
-
-For instance, if you would like to recreate some of the two-dimensional examples in the above-mentioned paper, and save the generated plots in the ./plots dir, run
+Running a command with its appropriate args is simple. For instance, if you would like to recreate some of the two-dimensional examples in the above-mentioned paper, and save the generated plots in the ./plots dir, run
 
 ```
 python cli.py recreate --example 2d --save-dir ./plots
