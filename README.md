@@ -1,5 +1,5 @@
 # SynthetMic
-A Python package for generating synthetic Laguerre polycrystalline microstructures, powered by [pysdot](https://github.com/sd-ot/pysdot).
+A Python package for generating synthetic polycrystalline microstructures using Laguerre diagrams, powered by [pysdot](https://github.com/sd-ot/pysdot).
 
 ## Installation
 To install the latest version of the package via `pip`, run
@@ -11,7 +11,7 @@ pip install synthetmic
 > uv add synthetmic
 
 ## Usage
-To use this package for generating synthetic microstructures, you would need to import the generator class as follows:
+To use this package to generate synthetic microstructures, you need to import the generator class as follows:
 ```python
 from synthetmic import LaguerreDiagramGenerator
 ```
@@ -30,11 +30,11 @@ generator = LaguerreDiagramGenerator(
 )
 ```
 
-Next is to fit this class to some data by calling the `fit` method. To this end, we will create random seeds and sample constant volumes in the domain [0, 2] x [0, 2] x [0, 3] as follows:
+We can fit this class to some data by calling the `fit` method. For example, we can create a Laguerre tessellation of the unit cube [0, 1] x [0, 1] x [0, 1] with 1000 cells of equal volume as follows:
 ```python
 import numpy as np
     
-domain = np.array([[0, 1] * 3])
+domain = np.array([[0, 1],[0, 1],[0, 1]])
 domain_vol = np.prod(domain[:, 1] - domain[:, 0])
     
 n_grains = 1000
@@ -52,7 +52,7 @@ generator.fit(
 )
 ```
 
-After calling the fit method, you can use the instance to get various things, e.g., get the centroids and vertices of the cells:
+After calling the fit method, you can use the instance to get various properties of the diagram, e.g., get the centroids and vertices of the cells:
 ```python
 centroids = generator.get_centroids()
 vertices = generator.get_vertices()
@@ -61,7 +61,7 @@ print("diagram centroids:\n", centroids)
 print("diagram vertices:\n", vertices)
 ```
 
-In fact you can plot the diagram in static or interactive mode by using the fitted instance:
+You can plot the diagram in static or interactive mode by using the fitted instance:
 ```python
 from synthetmic.plot import plot_cells_as_pyvista_fig
 plot_cells_as_pyvista_fig(
@@ -73,7 +73,11 @@ plot_cells_as_pyvista_fig(
 
 The generated HTML file can be viewed via any browser of your choice.
 
+<<<<<<< HEAD
 If you prefer a static figure, turn off interactive and save figure as pdf (can also be saved as eps, ps, tex, and svg):
+=======
+If you prefer a static figure, turn off `interactive` and save the figure as a pdf (it can also be saved as a png or jpeg):
+>>>>>>> d023c6febe0a468129f746899a8e58b2055c71bc
 ```python
 plot_cells_as_pyvista_fig(
         generator=generator,
@@ -87,11 +91,11 @@ To see more usage examples, see the `examples` folder or check below on how to r
 
 ## Working with source codes
 ### Build from source
-If you would like to build this project from source either for development purposes or for any other reasons, it is recommended to install [uv](https://docs.astral.sh/uv/). This is what is adopted in this project. To install uv, follow the instructions in this [link](https://docs.astral.sh/uv/getting-started/installation/).
+If you would like to build this project from source either for development purposes or for any other reason, it is recommended to install [uv](https://docs.astral.sh/uv/). This is what is adopted in this project. To install uv, follow the instructions in this [link](https://docs.astral.sh/uv/getting-started/installation/).
 
 If you don't want to use uv, you can use other alternatives like [pip](https://pip.pypa.io/en/stable/).
 
-The following instructions use uv for building systhetmic from source.
+The following instructions use uv for building synthetmic from source.
 
 1. Clone the repository by running
 
@@ -119,7 +123,7 @@ The following instructions use uv for building systhetmic from source.
     ```
 
 ### Running examples
-We create command line interface (cli) for recreating some of the examples provided in the this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) (and lots more!).
+We created a command line interface (cli) for recreating some of the examples provided in the this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) (and lots more!).
 
 To check the available commands in the cli, run
 
@@ -136,20 +140,18 @@ python cli.py COMMAND --help
 ```
 where `COMMAND` is any of the commands.
 
-Running a command with its appropriate args is simple.
-
-For instance, if you would like to recreate some of the two-dimensional examples in the above-mentioned paper, and save the generated plots in the ./plots dir, run
+Running a command with its appropriate args is simple. For instance, if you would like to recreate some of the two-dimensional examples in the above-mentioned paper, and save the generated plots in the ./plots dir, run
 
 ```
 python cli.py recreate --example 2d --save-dir ./plots
 ```
-You can do the same for three-dimension examples, in faact, you can pass the flat `--interactive` or `-i` to save the generated plots as `.html`, which can then be open in a browser and interact with them:
+You can do the same for three-dimension examples. You can pass the flag `--interactive` or `-i` to save the generated plots as a `.html` file, which can then be opened in a browser to interact with them:
 
 ```
 python cli.py recreate --example 2d --save-dir ./plots --interactive
 ```
 
-> Note: by default, the generated plots will be saved as `.pdf`. Passing `--interactive` flag to 2d case will be skipped since this is not that "interesting" for interactivity.
+> Note: by default, the generated plots will be saved as `.pdf`. Passing `--interactive` flag to 2d case will be skipped since this is not that interesting for interactivity.
 
 ### Running tests
 To run all tests, run
@@ -159,7 +161,7 @@ pytest -v tests
 ```
 
 ## References
-If you use this package in your research, please refer to the link to this project. Additionally, cite the paper that backs the the implemented algorithms as follows:
+If you use this package in your research, please refer to the link to this project. Additionally, please consider citing the following paper:
 ```bibtex
 @article{Bourne01112020,
 author = {D. P. Bourne and P. J. J. Kok and S. M. Roper and W. D. T. Spanjer},
@@ -175,3 +177,6 @@ URL = {https://doi.org/10.1080/14786435.2020.1790053},
 eprint = {https://doi.org/10.1080/14786435.2020.1790053}
 }
 ```
+You may also be interested in some of our other libraries:
+* [LPM](https://github.com/DPBourne/Laguerre-Polycrystalline-Microstructures) - MATLAB code for generating synthetic polycrystalline microstructures using Laguerre diagrams
+* [pyAPD](https://github.com/mbuze/PyAPD) - a Python library for computing *anisotropic* Laguerre diagrams
