@@ -1,5 +1,5 @@
 # SynthetMic
-A Python package for generating synthetic Laguerre polycrystalline microstructures, powered by [pysdot](https://github.com/sd-ot/pysdot).
+A Python package for generating synthetic polycrystalline microstructures using Laguerre diagrams, powered by [pysdot](https://github.com/sd-ot/pysdot).
 
 ## Installation
 To install the latest version of the package via `pip`, run
@@ -174,5 +174,5 @@ eprint = {https://doi.org/10.1080/14786435.2020.1790053}
 }
 ```
 You may also be interested in some of our other libraries:
-* [LPM](https://github.com/DPBourne/Laguerre-Polycrystalline-Microstructures) - MATLAB code for generating synthetic Laguerre polycrystalline microstructures
+* [LPM](https://github.com/DPBourne/Laguerre-Polycrystalline-Microstructures) - MATLAB code for generating synthetic polycrystalline microstructures using Laguerre diagrams
 * [pyAPD](https://github.com/mbuze/PyAPD) - a Python library for computing *anisotropic* Laguerre diagrams
