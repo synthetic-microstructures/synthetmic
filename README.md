@@ -73,11 +73,7 @@ plot_cells_as_pyvista_fig(
 
 The generated HTML file can be viewed via any browser of your choice.
 
-<<<<<<< HEAD
-If you prefer a static figure, turn off interactive and save figure as pdf (can also be saved as eps, ps, tex, and svg):
-=======
-If you prefer a static figure, turn off `interactive` and save the figure as a pdf (it can also be saved as a png or jpeg):
->>>>>>> d023c6febe0a468129f746899a8e58b2055c71bc
+If you prefer a static figure, turn off `interactive` and save figure as pdf (can also be saved as eps, ps, tex, and svg):
 ```python
 plot_cells_as_pyvista_fig(
         generator=generator,
