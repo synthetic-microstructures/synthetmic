@@ -119,7 +119,7 @@ The following instructions use uv for building systhetmic from source.
     ```
 
 ### Running examples
-We createed a command line interface (cli) for recreating some of the examples provided in the this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) (and lots more!).
+We created a command line interface (cli) for recreating some of the examples provided in the this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) (and lots more!).
 
 To check the available commands in the cli, run
 
@@ -149,7 +149,7 @@ You can do the same for three-dimension examples. You can pass the flag `--inter
 python cli.py recreate --example 2d --save-dir ./plots --interactive
 ```
 
-> Note: by default, the generated plots will be saved as `.pdf`. Passing `--interactive` flag to 2d case will be skipped since this is not that "interesting" for interactivity.
+> Note: by default, the generated plots will be saved as `.pdf`. Passing `--interactive` flag to 2d case will be skipped since this is not that interesting for interactivity.
 
 ### Running tests
 To run all tests, run
@@ -159,7 +159,7 @@ pytest -v tests
 ```
 
 ## References
-If you use this package in your research, please refer to the link to this project. Additionally, cite the paper that backs the the implemented algorithms as follows:
+If you use this package in your research, please refer to the link to this project. Additionally, please consider citing the following paper:
 ```bibtex
 @article{Bourne01112020,
 author = {D. P. Bourne and P. J. J. Kok and S. M. Roper and W. D. T. Spanjer},
