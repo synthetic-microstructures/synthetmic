@@ -173,3 +173,6 @@ URL = {https://doi.org/10.1080/14786435.2020.1790053},
 eprint = {https://doi.org/10.1080/14786435.2020.1790053}
 }
 ```
+You may also be interested in some of our other libraries:
+* [LPM](https://github.com/DPBourne/Laguerre-Polycrystalline-Microstructures) - MATLAB code for generating synthetic Laguerre polycrystalline microstructures
+* [pyAPD](https://github.com/mbuze/PyAPD) - a Python library for computing *anisotropic* Laguerre diagrams
