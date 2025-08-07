@@ -52,7 +52,7 @@ generator.fit(
 )
 ```
 
-After calling the fit method, you can use the instance to get various things, e.g., get the centroids and vertices of the cells:
+After calling the fit method, you can use the instance to get various properties of the diagram, e.g., get the centroids and vertices of the cells:
 ```python
 centroids = generator.get_centroids()
 vertices = generator.get_vertices()
@@ -61,7 +61,7 @@ print("diagram centroids:\n", centroids)
 print("diagram vertices:\n", vertices)
 ```
 
-In fact you can plot the diagram in static or interactive mode by using the fitted instance:
+You can plot the diagram in static or interactive mode by using the fitted instance:
 ```python
 from synthetmic.plot import plot_cells_as_pyvista_fig
 plot_cells_as_pyvista_fig(
@@ -87,7 +87,7 @@ To see more usage examples, see the `examples` folder or check below on how to r
 
 ## Working with source codes
 ### Build from source
-If you would like to build this project from source either for development purposes or for any other reasons, it is recommended to install [uv](https://docs.astral.sh/uv/). This is what is adopted in this project. To install uv, follow the instructions in this [link](https://docs.astral.sh/uv/getting-started/installation/).
+If you would like to build this project from source either for development purposes or for any other reason, it is recommended to install [uv](https://docs.astral.sh/uv/). This is what is adopted in this project. To install uv, follow the instructions in this [link](https://docs.astral.sh/uv/getting-started/installation/).
 
 If you don't want to use uv, you can use other alternatives like [pip](https://pip.pypa.io/en/stable/).
 
@@ -119,7 +119,7 @@ The following instructions use uv for building systhetmic from source.
     ```
 
 ### Running examples
-We create command line interface (cli) for recreating some of the examples provided in the this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) (and lots more!).
+We createed a command line interface (cli) for recreating some of the examples provided in the this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) (and lots more!).
 
 To check the available commands in the cli, run
 
