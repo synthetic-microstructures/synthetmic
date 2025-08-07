@@ -9,6 +9,9 @@ jobs:
   build-n-publish:
     name: Build and publish synthetmic to PyPI
     runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
 
     steps:
     - name: Check out repository code
