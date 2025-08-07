@@ -73,7 +73,7 @@ plot_cells_as_pyvista_fig(
 
 The generated HTML file can be viewed via any browser of your choice.
 
-If you prefer a static figure, turn off interactive and save figure as pdf (can also be saved as png or jpeg):
+If you prefer a static figure, turn off `interactive` and save the figure as a pdf (it can also be saved as a png or jpeg):
 ```python
 plot_cells_as_pyvista_fig(
         generator=generator,
@@ -143,7 +143,7 @@ For instance, if you would like to recreate some of the two-dimensional examples
 ```
 python cli.py recreate --example 2d --save-dir ./plots
 ```
-You can do the same for three-dimension examples, in faact, you can pass the flat `--interactive` or `-i` to save the generated plots as `.html`, which can then be open in a browser and interact with them:
+You can do the same for three-dimension examples. You can pass the flag `--interactive` or `-i` to save the generated plots as a `.html` file, which can then be opened in a browser to interact with them:
 
 ```
 python cli.py recreate --example 2d --save-dir ./plots --interactive
