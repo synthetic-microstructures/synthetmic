@@ -1,4 +1,4 @@
-# Synthet**M**ic
+# SynthetMic
 A Python package for generating synthetic Laguerre polycrystalline microstructures, powered by [pysdot](https://github.com/sd-ot/pysdot).
 
 ## Installation
@@ -30,7 +30,7 @@ generator = LaguerreDiagramGenerator(
 )
 ```
 
-Next is to fit this class to some data by calling the `fit` method. To this end, we will create random seeds and sample constant volumes in the domain [0, 2] x [0, 2] x [0, 3] as follows:
+We can fit this class to some data by calling the `fit` method. For example, we can create a Laguerre tessellation of the unit cube [0, 1] x [0, 1] x [0, 1] with 1000 cells of equal volume as follows:
 ```python
 import numpy as np
     
