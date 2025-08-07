@@ -156,6 +156,11 @@ To run all tests, run
 pytest -v tests
 ```
 
+## Authors and maintainers
+- [R. O. Ibraheem](https://github.com/Rasheed19)
+- [D. P. Bourne](https://github.com/DPBourne)
+- [S. M. Roper](https://github.com/smr29git)
+
 ## References
 If you use this package in your research, please refer to the link to this project. Additionally, please consider citing the following paper:
 ```bibtex
