@@ -234,8 +234,22 @@ def plot_cells_as_pyvista_fig(
         plotter.add_scalar_bar(vertical=False)
 
     if save_path is not None:
-        plotter.export_html(save_path) if interactive else plotter.save_graphic(
-            save_path
-        )
+        ext = save_path.split(".")[-1]
+        if interactive:
+            if ext.lower() == "html":
+                plotter.export_html(save_path)
+            else:
+                raise ValueError(
+                    f"Invalid file extension: {ext}. Extension must be only html if interactive is set to True."
+                )
+
+        else:
+            if ext.lower() != "html":
+                plotter.save_graphic(save_path)
+
+            else:
+                raise ValueError(
+                    f"Invalid file extension: {ext}. Extension must not be set to html if interactive is set to False"
+                )
 
     return plotter
