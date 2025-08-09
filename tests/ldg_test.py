@@ -1,5 +1,6 @@
 from dataclasses import asdict
 
+import numpy as np
 import pytest
 from pysdot import OptimalTransport
 
@@ -14,11 +15,30 @@ def fixture_data() -> RecreateData:
     return create_example5p1_data(n_grains=1000, r=1, is_periodic=False)
 
 
-def test_invalid_input(fixture_data) -> None:
-    # invalid damp_param
+def test_generator_params(fixture_data) -> None:
     with pytest.raises(ValueError):
         ldg = LaguerreDiagramGenerator(damp_param=2.3, verbose=False)
         ldg.fit(**asdict(fixture_data))
+
+    with pytest.raises(ValueError):
+        ldg = LaguerreDiagramGenerator(tol=0.0, verbose=False)
+        ldg.fit(**asdict(fixture_data))
+
+    with pytest.raises(ValueError):
+        ldg = LaguerreDiagramGenerator(n_iter=-12, verbose=False)
+        ldg.fit(**asdict(fixture_data))
+
+
+def test_fit_args(fixture_data) -> None:
+    with pytest.raises(TypeError):
+        ldg = LaguerreDiagramGenerator(verbose=False)
+        ldg.fit(seeds=fixture_data.seeds, volumes=1, domain=fixture_data.domain)
+
+    with pytest.raises(ValueError):
+        ldg = LaguerreDiagramGenerator(verbose=False)
+        ldg.fit(
+            seeds=fixture_data.seeds, volumes=np.zeros(50), domain=fixture_data.domain
+        )
 
 
 def test_valid_attributes(fixture_data) -> None:

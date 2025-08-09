@@ -8,27 +8,32 @@ import pyvista as pv
 from pysdot import OptimalTransport
 from pysdot.domain_types import ConvexPolyhedraAssembly
 
-from synthetmic.utils import NotFittedError
+from synthetmic.utils import (
+    NotFittedError,
+    validate_fit_args,
+    validate_generator_params,
+)
 
 
 class LaguerreDiagramGenerator:
     """
     tol : float, optional
-            relative percentage error for volumes
-    n_iter : int or None, optional
-        number of iterations of Lloyd's algorithm (move each seed to the
-        centroid of its cell)
+        Relative percentage error for volumes.
+    n_iter : int, optional
+        Number of iterations of Lloyd's algorithm (move each seed to the
+        centroid of its cell). If it is set to 0, then no Lloyd's iteration
+        will be performed.
     damp_param : float [0, 1], optional
-        the damping parametr of the damped Lloyd step; value must be between
-        0 and 1 (inclusive at both ends)
+        The damping parametr of the damped Lloyd step; value must be between
+        0 and 1 (inclusive at both ends).
     verbose : bool, optional
-        if set to True, print optimisation progress
+        If set to True, print optimisation progress.
     """
 
     def __init__(
         self,
         tol: float = 1.0,
-        n_iter: int | None = None,
+        n_iter: int = 5,
         damp_param: float = 1.0,
         verbose: bool = True,
     ):
@@ -86,18 +91,18 @@ class LaguerreDiagramGenerator:
         ----------
 
         seeds : ndarray, shape (N,d)
-            locations of the N seeds
+            Locations of the N seeds.
         volumes : ndarray, shape (N,)
-            target volumes or areas of the N Laguerre cells
+            Target volumes or areas of the N Laguerre cells.
         domain : ndarray, shape (d,2)
             minimum and maximum coordinates of the box in each of the d dimensions
             (d=2,3)
         periodic : list, optional, length d
-            list of Booleans indicating whether or not the domain is periodic in
-            the different directions. None indicates no periodicity in any direction
+            List of Booleans indicating whether or not the domain is periodic in
+            the different directions. None indicates no periodicity in any direction.
         init_weights : ndarray, optional, shape (N,)
-            initial guess for the weights for Algorithm 1.
-            None indicates that the weights should be zero
+            Initial guess for the weights for Algorithm 1.
+            None indicates that the weights should be zero.
 
         Returns
         -------
@@ -106,17 +111,20 @@ class LaguerreDiagramGenerator:
 
         """
 
-        # If periodic = None, then no periodicity
-        if periodic is not None:
-            if len(periodic) != domain.shape[0]:
-                raise ValueError(
-                    "The periodicity list should be length equal to the dimension of the box"
-                )
+        validate_generator_params(
+            tol=self.tol,
+            n_iter=self.n_iter,
+            damp_param=self.damp_param,
+            verbose=self.verbose,
+        )
 
-        if not (0.0 <= self.damp_param <= 1.0):
-            raise ValueError(
-                f"Invalid damp_param: {self.damp_param}; value must be between 0 and 1 (inclusive)"
-            )
+        validate_fit_args(
+            seeds=seeds,
+            volumes=volumes,
+            domain=domain,
+            periodic=periodic,
+            init_weights=init_weights,
+        )
 
         # Build the domain
         omega = ConvexPolyhedraAssembly()
@@ -160,7 +168,7 @@ class LaguerreDiagramGenerator:
                 if rep != (0, 0, 0):
                     optimal_transport.pd.add_replication(rep * lens)
 
-        if self.n_iter is None:
+        if self.n_iter == 0:
             # Algorithm 1
             # Solve the optimal transport problem (solve for the weights)
             optimal_transport.adjust_weights()
