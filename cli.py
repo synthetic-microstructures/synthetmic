@@ -28,7 +28,7 @@ def entry() -> None:
 @click.option(
     "--example",
     type=click.Choice([e.value for e in Example], case_sensitive=True),
-    default=Example.TWO_DIM,
+    default=Example.TWO_DIM.value,
     show_default=True,
     help="""The example case(s) to recreate from the paper:
     Bourne, D.P., Kok, P.J.J., Roper, S.M. & Spanjer, W.D.T. (2020) Laguerre tessellations
@@ -141,7 +141,7 @@ def recreate(example: str, save_dir: str, interactive: bool, periodic: bool) -> 
 @click.option(
     "--analysis",
     type=click.Choice([a.value for a in Analysis], case_sensitive=True),
-    default=Analysis.RUNTIME,
+    default=Analysis.RUNTIME.value,
     show_default=True,
     help="""Run some analysis of the performance of the algorithms developed in the paper:
     Bourne, D.P., Kok, P.J.J., Roper, S.M. & Spanjer, W.D.T. (2020) Laguerre tessellations

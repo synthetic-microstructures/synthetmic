@@ -248,7 +248,7 @@ def create_example4b_data(gradient: str, is_periodic: bool) -> RecreateData:
 
 def recreate_fig1(save_path: str, is_periodic: bool) -> None:
     TOL = 1e-2
-    N_ITER = None
+    N_ITER = 0
 
     data = create_example3_data(is_periodic)
 
