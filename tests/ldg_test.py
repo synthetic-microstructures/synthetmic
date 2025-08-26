@@ -4,15 +4,15 @@ import numpy as np
 import pytest
 from pysdot import OptimalTransport
 
-from examples.analyse import create_example5p1_data
-from examples.utils import RecreateData
 from synthetmic import LaguerreDiagramGenerator
+from synthetmic.data.toy import create_data_with_constant_volumes
+from synthetmic.data.utils import SynthetMicData
 from synthetmic.utils import NotFittedError
 
 
 @pytest.fixture
-def fixture_data() -> RecreateData:
-    return create_example5p1_data(n_grains=1000, r=1, is_periodic=False)
+def fixture_data() -> SynthetMicData:
+    return create_data_with_constant_volumes(space_dim=3)
 
 
 def test_generator_params(fixture_data) -> None:
@@ -62,3 +62,65 @@ def test_ensure_fit() -> None:
     with pytest.raises(NotFittedError):
         ldg = LaguerreDiagramGenerator()
         ldg.get_centroids()
+
+
+def test_get_vertices_2d():
+    n_grains = 2
+
+    seeds = np.array(
+        [
+            [
+                0.5,
+                0.5,
+            ],
+            [
+                0.5,
+                0.75,
+            ],
+        ]
+    )
+    volumes = np.ones(n_grains) / n_grains
+    domain = np.array([[0, 1], [0, 1]])
+
+    ldg = LaguerreDiagramGenerator(n_iter=0)
+    ldg.fit(seeds=seeds, volumes=volumes, domain=domain)
+
+    res = ldg.get_vertices()
+
+    assert len(res) == n_grains
+    assert sum(len(v) for v in res.values()) == 8
+
+
+def test_get_vertices_3d():
+    n_grains = 2
+
+    seeds = np.array(
+        [
+            [
+                0.5,
+                0.5,
+                0.5,
+            ],
+            [
+                0.5,
+                0.5,
+                0.75,
+            ],
+        ]
+    )
+    volumes = np.ones(n_grains) / n_grains
+    domain = np.array([[0, 1], [0, 1], [0, 1]])
+
+    ldg = LaguerreDiagramGenerator(n_iter=0)
+    ldg.fit(seeds=seeds, volumes=volumes, domain=domain)
+
+    res = ldg.get_vertices()
+
+    assert len(res) == n_grains
+
+    sum_vertices = 0
+    for faces in res.values():
+        for vertices in faces:
+            sum_vertices += len(vertices)
+
+    assert sum_vertices == 48
