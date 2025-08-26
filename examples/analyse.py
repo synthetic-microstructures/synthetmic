@@ -6,12 +6,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from examples.utils import (
-    RecreateData,
-    create_periodicity,
     get_rcparams,
-    sample_random_seeds,
 )
 from synthetmic import LaguerreDiagramGenerator
+from synthetmic.data.paper import create_example5p1_data
 
 plt.rcParams.update(get_rcparams())
 
@@ -19,37 +17,6 @@ plt.rcParams.update(get_rcparams())
 class Phase(StrEnum):
     SINGLE = auto()
     DUAL = auto()
-
-
-def calulate_rel_vols(n1: int, n2: int, r: int) -> np.ndarray:
-    """
-    Function to compute the (relative) volumes of the grains in an idealised
-    microstructure with n1 grains of volume v and n2 grains of volume r*v,
-    where v is chosen so that the total volume of the grains equals 1.
-    """
-    vols = np.concatenate((np.ones(n1), r * np.ones(n2)))
-
-    return vols / np.sum(vols)
-
-
-def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> RecreateData:
-    L1, L2, L3 = 100, 100, 100
-
-    domain = np.array([[0, L1], [0, L2], [0, L3]])
-    domain_vol = np.prod(domain[:, 1] - domain[:, 0])
-
-    periodic = create_periodicity(domain.shape[0], is_periodic)
-
-    X = sample_random_seeds(domain, n_grains)
-    target_vols = domain_vol * calulate_rel_vols(n_grains // 2, n_grains // 2, r)
-
-    return RecreateData(
-        seeds=X,
-        volumes=target_vols,
-        domain=domain,
-        periodic=periodic,
-        init_weights=None,
-    )
 
 
 def recreate_figure6(save_path: str, is_periodic: bool) -> None:

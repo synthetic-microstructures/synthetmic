@@ -42,6 +42,7 @@ class LaguerreDiagramGenerator:
         self.damp_param = damp_param
         self.verbose = verbose
 
+        self.space_dim_: int | None = None
         self.optimal_transport_: OptimalTransport | None = None
         self.max_percentage_error_: float | None = None
         self.mean_percentage_error_: float | None = None
@@ -125,6 +126,8 @@ class LaguerreDiagramGenerator:
             periodic=periodic,
             init_weights=init_weights,
         )
+
+        self.space_dim_ = domain.shape[0]
 
         # Build the domain
         omega = ConvexPolyhedraAssembly()
@@ -255,12 +258,68 @@ class LaguerreDiagramGenerator:
 
         return self.optimal_transport_.pd.centroids()
 
-    def get_vertices(self) -> np.ndarray:
-        """Get the vertices of the cells in the laguerre diagram."""
+    def get_vertices(self) -> dict[int, list]:
+        """Get the vertices of the cells in the laguerre diagram.
 
-        mesh = self.get_mesh()
+        Return
+        ------
+        A dictionary with keys as cell ids and values as the
+        corresponding vertices.
 
-        return np.array(mesh.extract_surface().points)
+        In 2D, the format looks like this:
+
+        {
+            0: [v_1, v_2, ...],
+            ...
+            n-1: [v_1, v_2, ...],
+
+        }
+        where n is the number of cells or grains.
+
+        In 3D, the format looks like this:
+
+        {
+            0: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
+            ...
+            n-1: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
+
+        }
+        where n is the number of cells or grains. Note that the inner
+        list of vertices for each cell corresponds to the face vertices.
+        """
+
+        self._ensure_fitted()
+
+        res = {}
+
+        if self.space_dim_ == 2:
+            offsets, coords = self.optimal_transport_.pd.cell_polyhedra()
+
+            for i in range(len(offsets) - 1):
+                s, e = offsets[i : i + 2]
+                res[i] = coords[s:e].tolist()
+
+        elif self.space_dim_ == 3:
+            offsets_polyhedra, offsets_polygon, coords = (
+                self.optimal_transport_.pd.cell_polyhedra()
+            )
+
+            for i in range(len(offsets_polyhedra) - 1):
+                s1, e1 = offsets_polyhedra[i : i + 2]
+                sub_offsets = offsets_polygon[
+                    s1 : e1 + 1
+                ]  # 1 is added to e1 to get the correct vertex index
+
+                cell_vertices = []
+
+                for j in range(len(sub_offsets) - 1):
+                    s2, e2 = sub_offsets[j : j + 2]
+
+                    cell_vertices.append(coords[s2:e2].tolist())
+
+                res[i] = cell_vertices
+
+        return res
 
     def get_weights(self) -> np.ndarray:
         """Get the weights of the laguerre diagram."""

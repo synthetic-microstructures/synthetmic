@@ -1,8 +1,5 @@
-from dataclasses import dataclass
 from enum import StrEnum, auto
 from typing import Any
-
-import numpy as np
 
 
 class Example(StrEnum):
@@ -17,42 +14,9 @@ class Analysis(StrEnum):
     ALL = auto()
 
 
-class Initializer(StrEnum):
-    RANDOM = auto()
-    BANDED = auto()
-    CLUSTERED = auto()
-    MIXED_BANDED_AND_RANDOM = auto()
-
-
-class Gradient(StrEnum):
-    INCREASING = auto()
-    LARGE_AT_MIDDLE = auto()
-
-
 class DocType(StrEnum):
     ARTICLE = auto()
     BEAMER = auto()
-
-
-@dataclass(frozen=True)
-class RecreateData:
-    seeds: np.ndarray
-    volumes: np.ndarray
-    domain: np.ndarray
-    periodic: list[bool] | None
-    init_weights: np.ndarray | None
-
-
-def sample_random_seeds(
-    domain: np.ndarray, n_grains: int, random_state: int | None = None
-) -> np.ndarray:
-    return np.column_stack(
-        [np.random.uniform(low=d[0], high=d[1], size=n_grains) for d in domain]
-    )
-
-
-def create_periodicity(space_dim: int, is_periodic: bool) -> list[bool] | None:
-    return [True] * space_dim if is_periodic else None
 
 
 def get_rcparams() -> Any:
