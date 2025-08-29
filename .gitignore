@@ -10,3 +10,5 @@ wheels/
 .venv
 assets/
 plots/
+notebook.ipynb
+dev.py

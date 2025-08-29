@@ -1,4 +1,5 @@
 import tempfile
+from enum import StrEnum, auto
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -11,6 +12,15 @@ from vtk.numpy_interface import dataset_adapter as dsa
 from vtk.util.numpy_support import vtk_to_numpy
 
 from synthetmic import LaguerreDiagramGenerator
+
+
+class _PyvistaSupportedExtension(StrEnum):
+    HTML = auto()
+    SVG = auto()
+    EPS = auto()
+    PS = auto()
+    PDF = auto()
+    TEX = auto()
 
 
 def plot_2dcells_as_matplotlib_fig(
@@ -132,7 +142,6 @@ def plot_cells_as_pyvista_fig(
     colorby: np.ndarray | list[float] | None = None,
     colormap: str = "plasma",
     save_path: str | None = None,
-    interactive: bool = False,
     include_slices: bool = False,
 ) -> pv.Plotter:
     """
@@ -157,10 +166,8 @@ def plot_cells_as_pyvista_fig(
         a string representing one of the supported colormaps in the matplotlib library.
     save_path: str or None
         a string reperesenting the path to save the generated figure to, e.g., ./plots/figure2.pdf.
-        If None, figure will not be saved.
-    interactive : bool, optional
-        when True, figure will be saved as html. This requires you provide save_path and ensure that
-        the file name has .html extension.
+        If None, figure will not be saved. File extension must be one of the supported extensions in
+        pyvista.
     include_slices : bool, optional
         when True, include othorgonal slice and slices along the axes coordinates to the figure.
 
@@ -182,23 +189,25 @@ def plot_cells_as_pyvista_fig(
             f"Invalid colormap string: {colormap}. Value must be one of the following: {', '.join(list(colormaps))}"
         )
 
+    _, space_dim = generator.get_positions().shape
+
     if include_slices:
         N_ROW, N_COL = 2, 3
         plotter = pv.Plotter(
             off_screen=True,
             window_size=list(window_size),
             notebook=notebook,
-            title=title,
             shape=(N_ROW, N_COL),
         )
 
+        NUM_SLICES = 3
         meshes = (
             mesh,
             mesh.slice_orthogonal(),
             mesh.slice_along_axis(n=2, axis="x"),
-            mesh.slice_along_axis(axis="x"),
-            mesh.slice_along_axis(axis="y"),
-            mesh.slice_along_axis(axis="z"),
+            mesh.slice_along_axis(n=NUM_SLICES, axis="x"),
+            mesh.slice_along_axis(n=NUM_SLICES, axis="y"),
+            mesh.slice_along_axis(n=NUM_SLICES, axis="z"),
         )
 
         c = 0
@@ -208,48 +217,53 @@ def plot_cells_as_pyvista_fig(
                 plotter.add_mesh(
                     meshes[c],
                     show_edges=True,
+                    scalars="vols",
                     show_scalar_bar=False,
+                    cmap=colormap,
                 )
+
+                if space_dim == 2:
+                    plotter.camera_position = "xy"
 
                 c += 1
 
         plotter.link_views()
-        plotter.view_isometric()
 
     else:
         plotter = pv.Plotter(
             off_screen=True,
             window_size=list(window_size),
             notebook=notebook,
-            title=title,
         )
         plotter.add_mesh(
             mesh,
             show_edges=True,
+            scalars="vols",
             show_scalar_bar=False,
+            cmap=colormap,
         )
 
-    if interactive:
-        plotter.show_axes()
-        plotter.add_scalar_bar(vertical=False)
+        if space_dim == 2:
+            plotter.camera_position = "xy"
+
+    if title is not None:
+        plotter.add_title(title=title)
+
+    plotter.show_axes()
 
     if save_path is not None:
-        ext = save_path.split(".")[-1]
-        if interactive:
-            if ext.lower() == "html":
-                plotter.export_html(save_path)
-            else:
-                raise ValueError(
-                    f"Invalid file extension: {ext}. Extension must be only html if interactive is set to True."
-                )
+        ext = save_path.split(".")[-1].lower()
 
-        else:
-            if ext.lower() != "html":
+        if ext in _PyvistaSupportedExtension:
+            if ext == _PyvistaSupportedExtension.HTML:
+                plotter.export_html(save_path)
+
+            else:
                 plotter.save_graphic(save_path)
 
-            else:
-                raise ValueError(
-                    f"Invalid file extension: {ext}. Extension must not be set to html if interactive is set to False"
-                )
+        else:
+            raise ValueError(
+                f"Invalid file extension: {ext}. Extension must be one of [{', '.join(_PyvistaSupportedExtension)}]."
+            )
 
     return plotter
