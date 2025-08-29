@@ -79,7 +79,6 @@ def recreate(example: str, save_dir: str, interactive: bool, periodic: bool) -> 
             fn(
                 save_path=f"{save_dir}/{sn}.{ext}",
                 is_periodic=periodic,
-                interactive=interactive,
             )
 
         return None

@@ -66,24 +66,40 @@ You can plot the diagram in static or interactive mode by using the fitted insta
 from synthetmic.plot import plot_cells_as_pyvista_fig
 plot_cells_as_pyvista_fig(
         generator=generator,
-        interactive=True,
         save_path="./example_diagram.html",
 )
 ```
 
 The generated HTML file can be viewed via any browser of your choice.
 
-If you prefer a static figure, turn off `interactive` and save figure as pdf (can also be saved as eps, ps, tex, and svg):
+If you prefer a static figure, you can save it with any of the file formats or extensions namely pdf, eps, ps, tex, and svg. Saving the figure as pdf looks like:
 ```python
 plot_cells_as_pyvista_fig(
         generator=generator,
-        interactive=False,
         save_path="./example_diagram.pdf",
     )
 ```
 
 To see more usage examples, see the `examples` folder or check below on how to run them via `cli.py`.
 
+The example above uses a custom data. If you would like to use one of the data provided by this package, they can be loaded from the `synthetmic.data.paper` and `synthetmic.data.toy` modules. The former gives access to the data for generating some figures from this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) and the latter provides access to some useful toy data. All data creators or loaders from these modules return a `synthetmic.data.utils.SynthetMicData` data object which contains the following fields: `seeds`, `volumes`, `domain`, `periodic`, and `init_weights`.
+
+Each of the fields of the data object can be passed to the `LeguerreDiagramGenerator().fit` method either as keyword/positional arguments or as dictionary. For instance, let's load some data from the `synthetmic.data.paper` and pass the fields as keyword arguments:
+```python
+from synthetmic.data.paper import create_example5p5_data
+
+data = create_example5p5_data(is_periodic=False)
+generator.fit(
+        seeds=data.seeds,
+        volumes=data.volumes,
+        domain=data.domain,
+)
+```
+or pass the fields as dictionary:
+```python
+from dataclasses import asdict
+generator.fit(**asdict(data))
+```
 
 ## Working with source codes
 ### Build from source
@@ -181,3 +197,4 @@ eprint = {https://doi.org/10.1080/14786435.2020.1790053}
 You may also be interested in some of our other libraries:
 * [LPM](https://github.com/DPBourne/Laguerre-Polycrystalline-Microstructures) - MATLAB code for generating synthetic polycrystalline microstructures using Laguerre diagrams
 * [pyAPD](https://github.com/mbuze/PyAPD) - a Python library for computing *anisotropic* Laguerre diagrams
+* [SynthetMic-GUI](https://github.com/synthetic-microstructures/synthetmic-gui) - a web app for generating 2D and 3D synthetic polycrystalline microstructures using Laguerre tessellations
