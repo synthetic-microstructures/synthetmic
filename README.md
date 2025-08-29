@@ -80,7 +80,7 @@ plot_cells_as_pyvista_fig(
     )
 ```
 
-to see more usage examples, see the `examples` folder or check below on how to run them via `cli.py`.
+To see more usage examples, see the `examples` folder or check below on how to run them via `cli.py`.
 
 The example above uses a custom data. If you would like to use one of the data provided by this package, they can be loaded from the `synthetmic.data.paper` and `synthetmic.data.toy` modules. The former gives access to the data for generating some figures from this [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053) and the latter provides access to some useful toy data. All data creators or loaders from these modules return a `synthetmic.data.utils.SynthetMicData` data object which contains the following fields: `seeds`, `volumes`, `domain`, `periodic`, and `init_weights`.
 
