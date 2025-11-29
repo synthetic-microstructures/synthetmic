@@ -168,7 +168,7 @@ class LaguerreDiagramGenerator:
             cartesian_periodic = list(itertools.product(*periodic_list))
 
             for rep in cartesian_periodic:
-                if rep != (0, 0, 0):
+                if rep != (0,) * self.space_dim_:
                     optimal_transport.pd.add_replication(rep * lens)
 
         if self.n_iter == 0:

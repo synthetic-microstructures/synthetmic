@@ -10,10 +10,8 @@ from synthetmic.data.utils import (
 
 def _create_unit_domain(space_dim: int) -> tuple[np.ndarray, float]:
     match space_dim:
-        case 2:
-            return np.array([[0, 1], [0, 1]]), 1.0
-        case 3:
-            return np.array([[0, 1], [0, 1], [0, 1]]), 1.0
+        case 2 | 3:
+            return np.array([[0, 1]] * space_dim), 1.0
         case _:
             raise ValueError(
                 f"invalid space_dim: {space_dim}; value must be either 2 or 3."
