@@ -5,10 +5,9 @@ build/
 dist/
 wheels/
 *.egg-info
+.pytest_cache/
 
 # Virtual environments
 .venv
 assets/
 plots/
-notebook.ipynb
-dev.py
