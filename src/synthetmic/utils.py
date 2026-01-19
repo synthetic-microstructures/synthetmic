@@ -1,10 +1,66 @@
+import itertools
 from typing import Any, Callable, Type
 
 import numpy as np
+from pysdot import OptimalTransport, PowerDiagram
+from pysdot.domain_types import ConvexPolyhedraAssembly
 
 
 class NotFittedError(ValueError, AttributeError):
-    """Raised when attempting to use an unfitted generator."""
+    """
+    Raised when attempting to use an unfitted generator.
+    """
+
+
+def build_domain(
+    domain: np.ndarray, periodic: list[bool] | None
+) -> tuple[ConvexPolyhedraAssembly, np.ndarray]:
+    """
+    Build a ConvexPolyhedraAssemply domain instance.
+    """
+    omega = ConvexPolyhedraAssembly()
+
+    mins = domain[:, 0].copy()
+    maxs = domain[:, 1].copy()
+    lens = domain[:, 1] - domain[:, 0]
+
+    if periodic is not None:
+        for k, p in enumerate(periodic):
+            if p:
+                mins[k] = mins[k] - lens[k]
+                maxs[k] = maxs[k] + lens[k]
+
+    omega.add_box(mins, maxs)
+
+    return omega, lens
+
+
+def add_replicants(
+    obj: OptimalTransport | PowerDiagram, periodic: list[bool], domain_lens: np.ndarray
+) -> None:
+    """
+    Adds replicants to the underlying PowerDiagram instance.
+    """
+
+    if not any([isinstance(obj, OptimalTransport), isinstance(obj, PowerDiagram)]):
+        raise ValueError("obj must be either OptimalTransport or PowerDiagram")
+
+    if len(periodic) != domain_lens.size:
+        raise ValueError("len of periodic must be the same as len of lens")
+
+    periodic_dict = {True: [-1, 0, 1], False: [0]}
+    periodic_list = [periodic_dict[p] for p in periodic]
+
+    cartesian_periodic = list(itertools.product(*periodic_list))
+
+    for rep in cartesian_periodic:
+        if rep != (0,) * len(periodic):
+            if isinstance(obj, OptimalTransport):
+                obj.pd.add_replication(rep * domain_lens)
+            else:
+                obj.add_replication(rep * domain_lens)
+
+    return None
 
 
 def _gt(rhs: float) -> Callable[[float | None, str], None]:
@@ -126,12 +182,14 @@ def _check_periodic(x: list[bool], name: str) -> None:
 
 
 def validate_generator_params(
-    tol: float,
+    tol: float | None,
     n_iter: int,
     damp_param: float,
     verbose: bool,
 ) -> None:
-    _compose_rules(_is_instance(instance=float), _gt(rhs=0.0))(tol, "tol")
+    if tol is not None:
+        _compose_rules(_is_instance(instance=float), _gt(rhs=0.0))(tol, "tol")
+
     _compose_rules(_is_instance(instance=int), _gte(rhs=0))(n_iter, "n_iter")
     _compose_rules(_is_instance(instance=float), _between(left=0.0, right=1.0))(
         damp_param, "damp_param"
@@ -143,7 +201,7 @@ def validate_generator_params(
 
 def validate_fit_args(
     seeds: np.ndarray,
-    volumes: np.ndarray,
+    volumes: np.ndarray | None,
     domain: np.ndarray,
     periodic: list[bool] | None,
     init_weights: np.ndarray | None,
@@ -152,9 +210,10 @@ def validate_fit_args(
         _is_instance(instance=np.ndarray), _check_array(allowed_types=[float, int])
     )(seeds, "seeds")
 
-    _compose_rules(
-        _is_instance(instance=np.ndarray), _check_array(allowed_types=[float, int])
-    )(volumes, "volumes")
+    if volumes is not None:
+        _compose_rules(
+            _is_instance(instance=np.ndarray), _check_array(allowed_types=[float, int])
+        )(volumes, "volumes")
 
     _compose_rules(
         _is_instance(instance=np.ndarray),

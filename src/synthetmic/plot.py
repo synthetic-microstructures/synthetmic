@@ -1,5 +1,6 @@
 import tempfile
 from enum import StrEnum, auto
+from pathlib import Path
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ from matplotlib.axes import Axes
 from vtk.numpy_interface import dataset_adapter as dsa
 from vtk.util.numpy_support import vtk_to_numpy
 
-from synthetmic import LaguerreDiagramGenerator
+from synthetmic.generate import DiagramGenerator
 
 
 class _PyvistaSupportedExtension(StrEnum):
@@ -24,12 +25,12 @@ class _PyvistaSupportedExtension(StrEnum):
 
 
 def plot_2dcells_as_matplotlib_fig(
-    generator: LaguerreDiagramGenerator,
+    generator: DiagramGenerator,
     ax: Axes | None = None,
     title: str | None = None,
     colorby: np.ndarray | list[float] | None = None,
     colormap: str = "plasma",
-    save_path: str | None = None,
+    save_path: str | Path | None = None,
 ) -> Axes:
     """
     A function that plots a 2D Laguerre cells as matplotlib figure.
@@ -37,8 +38,8 @@ def plot_2dcells_as_matplotlib_fig(
     Parameters
     ----------
 
-    generator : LaguerreDiagramGenerator
-        a fitted LaguerreDiagramGenerator object.
+    generator : DiagramGenerator
+        a fitted DiagramGenerator object (e.g., LeguerreDiagramGenerator).
     axis : Axis, optional
         a matplotlib axis object to handle the figure, if None, a new one will be created
     title : str or None, optional
@@ -135,13 +136,13 @@ def plot_2dcells_as_matplotlib_fig(
 
 
 def plot_cells_as_pyvista_fig(
-    generator: LaguerreDiagramGenerator,
+    generator: DiagramGenerator,
     window_size: tuple[int, int] = (1024, 768),
     notebook: bool = False,
     title: str | None = None,
     colorby: np.ndarray | list[float] | None = None,
     colormap: str = "plasma",
-    save_path: str | None = None,
+    save_path: str | Path | None = None,
     include_slices: bool = False,
 ) -> pv.Plotter:
     """
@@ -151,7 +152,7 @@ def plot_cells_as_pyvista_fig(
     ----------
 
     generator : LaguerreDiagramGenerator
-        a fitted LaguerreDiagramGenerator object.
+        a fitted DiagramGenerator object (e.g., LeguerreDiagramGenerator).
     window_size : tuple[int, int], optional
         the figure size.
     notebook : bool, optional
@@ -252,7 +253,7 @@ def plot_cells_as_pyvista_fig(
     plotter.show_axes()
 
     if save_path is not None:
-        ext = save_path.split(".")[-1].lower()
+        ext = str(save_path).split(".")[-1].lower()
 
         if ext in _PyvistaSupportedExtension:
             if ext == _PyvistaSupportedExtension.HTML:
