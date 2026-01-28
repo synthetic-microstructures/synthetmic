@@ -33,7 +33,7 @@ def test_pos_and_vols(
         periodic=None,
     )
 
-    # assert np.allclose(vdg.get_positions(), expected_pos)
+    print(vdg.get_positions())
     assert np.allclose(vdg.get_fitted_volumes(), expected_vols)
 
     return None
