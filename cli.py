@@ -12,7 +12,7 @@ from examples.recreate_2d import (
 )
 from examples.recreate_3d import recreate_fig12, recreate_fig13
 from examples.utils import Analysis, Example
-from examples.voronoi import voronio_with_random_seeds
+from examples.voronoi import voronoi_with_random_seeds
 
 
 def color_text(text: str, color: str = "green", bold: bool = False) -> str:
@@ -215,7 +215,7 @@ def voronoi(
     """
 
     def _two_d() -> None:
-        voronio_with_random_seeds(
+        voronoi_with_random_seeds(
             space_dim=2,
             save_path=Path(
                 save_dir, f"2d_voronoi_diagram_n_grains_{n_grains}_n_iter_{n_iter}.pdf"
@@ -229,7 +229,7 @@ def voronoi(
 
     def _three_d() -> None:
         ext = "html" if interactive else "pdf"
-        voronio_with_random_seeds(
+        voronoi_with_random_seeds(
             space_dim=3,
             save_path=Path(
                 save_dir,

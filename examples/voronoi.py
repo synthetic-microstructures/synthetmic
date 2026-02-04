@@ -8,7 +8,7 @@ from synthetmic.data import toy
 from synthetmic.plot import plot_2dcells_as_matplotlib_fig, plot_cells_as_pyvista_fig
 
 
-def voronio_with_random_seeds(
+def voronoi_with_random_seeds(
     space_dim: int, n_grains: int, n_iter: int, is_periodic: bool, save_path: str | Path
 ) -> None:
     domain, _ = toy._create_unit_domain(space_dim)
