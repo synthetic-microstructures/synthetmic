@@ -13,12 +13,12 @@ class SynthetMicData:
 
 
 def sample_random_seeds(
-    domain: np.ndarray, n_grains: int, random_state: int | None = None
-) -> np.ndarray:
-    np.random.seed(seed=random_state)
+    domain: np.ndarray, n_grains: int, random_state: int | None
+) -> tuple[np.ndarray, np.ndarray]:
+    np.random.seed(random_state)
 
-    return np.column_stack(
-        [np.random.uniform(low=d[0], high=d[1], size=n_grains) for d in domain]
+    return np.random.uniform(
+        low=domain[:, 0], high=domain[:, 1], size=(n_grains, domain.shape[0])
     )
 
 
