@@ -6,7 +6,7 @@ import numpy as np
 @dataclass(frozen=True)
 class SynthetMicData:
     seeds: np.ndarray
-    volumes: np.ndarray
+    volumes: np.ndarray | None
     domain: np.ndarray
     periodic: list[bool] | None
     init_weights: np.ndarray | None
