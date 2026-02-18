@@ -13,7 +13,7 @@ class SynthetMicData:
 
 
 def sample_random_seeds(
-    domain: np.ndarray, n_grains: int, random_state: int | None
+    domain: np.ndarray, n_grains: int, random_state: int | None = None
 ) -> tuple[np.ndarray, np.ndarray]:
     np.random.seed(random_state)
 
