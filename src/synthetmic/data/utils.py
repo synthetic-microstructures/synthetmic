@@ -6,7 +6,7 @@ import numpy as np
 @dataclass(frozen=True)
 class SynthetMicData:
     seeds: np.ndarray
-    volumes: np.ndarray
+    volumes: np.ndarray | None
     domain: np.ndarray
     periodic: list[bool] | None
     init_weights: np.ndarray | None
@@ -14,11 +14,11 @@ class SynthetMicData:
 
 def sample_random_seeds(
     domain: np.ndarray, n_grains: int, random_state: int | None = None
-) -> np.ndarray:
-    np.random.seed(seed=random_state)
+) -> tuple[np.ndarray, np.ndarray]:
+    np.random.seed(random_state)
 
-    return np.column_stack(
-        [np.random.uniform(low=d[0], high=d[1], size=n_grains) for d in domain]
+    return np.random.uniform(
+        low=domain[:, 0], high=domain[:, 1], size=(n_grains, domain.shape[0])
     )
 
 

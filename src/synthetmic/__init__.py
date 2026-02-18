@@ -1,5 +1,6 @@
-from .generate import LaguerreDiagramGenerator
+from .generate import LaguerreDiagramGenerator, VoronoiDiagramGenerator
 
 __all__ = [
     "LaguerreDiagramGenerator",
+    "VoronoiDiagramGenerator",
 ]
