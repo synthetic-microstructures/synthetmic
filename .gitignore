@@ -8,3 +8,4 @@ wheels/
 .venv
 assets/
 plots/
+notebooks/
