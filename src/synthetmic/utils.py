@@ -2,14 +2,82 @@ import itertools
 from typing import Any, Callable, Type
 
 import numpy as np
+from joblib import Parallel, delayed
 from pysdot import OptimalTransport, PowerDiagram
 from pysdot.domain_types import ConvexPolyhedraAssembly
+from scipy.spatial.distance import cdist
 
 
-class NotFittedError(ValueError, AttributeError):
+def mesh_diagram(
+    points: np.ndarray,
+    pd: PowerDiagram,
+    batch_size: int = 100,
+    parallel: bool = False,
+    n_jobs: int = -1,
+) -> np.ndarray:
     """
-    Raised when attempting to use an unfitted generator.
+    For each point in `points`, compute which cell it belongs to
+    in the power diagram `pd`.
+
+    Parameters
+    ----------
+    points : np.ndarray
+        Array of shape (n_points, dim) with 2D or 3D coordinates.
+    pd : PowerDiagram
+        Power diagram object.
+    batch_size : int, default=100
+        Number of points processed per batch.
+    parallel : bool, default=False
+        If True, process batches in parallel using joblib.
+        Recommended only for large numbers of points and/or grains
+        (seeds), where distance computation becomes expensive.
+    n_jobs : int, default=-1
+        Number of parallel workers to use when `parallel=True`.
+        -1 uses all available CPU cores.
+
+    Returns
+    -------
+    grain_indices : np.ndarray
+        Array of shape (n_points,) where grain_indices[i] is
+        the index of the grain containing point i.
     """
+    _check_points(points)
+
+    x = pd.get_positions()
+
+    if points.shape[1] != x.shape[1]:
+        raise ValueError(
+            "`points` and power diagram positions must have the same "
+            f"number of coordinates, but got {points.shape[1]} vs {x.shape[1]}."
+        )
+
+    w = pd.get_weights()
+    num_points = len(points)
+
+    if not parallel:
+        grain_indices = np.empty(num_points, dtype=np.int32)
+
+        for i in range(0, num_points, batch_size):
+            batch = points[i : i + batch_size]
+            squared_distances = cdist(batch, x, metric="sqeuclidean")
+            grain_indices[i : i + batch_size] = np.argmin(squared_distances - w, axis=1)
+
+        return grain_indices
+
+    batches = [
+        (i, min(i + batch_size, num_points)) for i in range(0, num_points, batch_size)
+    ]
+
+    def _process_batch(start: int, end: int):
+        batch = points[start:end]
+        squared_distances = cdist(batch, x, metric="sqeuclidean")
+        return np.argmin(squared_distances - w, axis=1)
+
+    results = Parallel(n_jobs=n_jobs, backend="loky")(
+        delayed(_process_batch)(start, end) for start, end in batches
+    )
+
+    return np.concatenate(results)
 
 
 def build_domain(
@@ -59,6 +127,33 @@ def add_replicants(
                 obj.pd.add_replication(rep * domain_lens)
             else:
                 obj.add_replication(rep * domain_lens)
+
+    return None
+
+
+class NotFittedError(ValueError, AttributeError):
+    """
+    Raised when attempting to use an unfitted generator.
+    """
+
+
+def _check_points(points: np.ndarray) -> None:
+    points = np.asarray(points)
+
+    if points.ndim != 2:
+        raise ValueError(
+            f"`points` must be a 2D array of shape (n, d). "
+            f"Got array with shape {points.shape}."
+        )
+
+    if points.shape[0] == 0:
+        raise ValueError("`points` must contain at least one point.")
+
+    if points.shape[1] not in (2, 3):
+        raise ValueError(
+            f"`points` must have 2 or 3 columns (2D or 3D coordinates). "
+            f"Got {points.shape[1]}."
+        )
 
     return None
 
