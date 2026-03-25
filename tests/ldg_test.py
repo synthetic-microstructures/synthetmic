@@ -45,7 +45,7 @@ def test_fit_args(const_vol_data) -> None:
 
 
 def test_valid_attributes(const_vol_data) -> None:
-    ldg = LaguerreDiagramGenerator(verbose=False)
+    ldg = LaguerreDiagramGenerator(tol=1, damp_param=1, verbose=False)
     ldg.fit(**asdict(const_vol_data))
 
     assert isinstance(ldg.optimal_transport_, OptimalTransport) is True
@@ -54,7 +54,7 @@ def test_valid_attributes(const_vol_data) -> None:
 
 
 def test_output_dim(const_vol_data) -> None:
-    ldg = LaguerreDiagramGenerator(verbose=False)
+    ldg = LaguerreDiagramGenerator(tol=1, damp_param=1, verbose=False)
     ldg.fit(**asdict(const_vol_data))
 
     assert ldg.get_centroids().shape == const_vol_data.seeds.shape

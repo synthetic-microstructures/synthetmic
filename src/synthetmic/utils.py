@@ -180,18 +180,15 @@ def _gte(rhs: float) -> Callable[[float | None, str], None]:
 
 
 def _is_instance(
-    instance: Type, allow_none: bool = False
+    *instance: tuple[Type, ...], allow_none: bool = False
 ) -> Callable[[Any, str], None]:
     def _out(x: Any, name: str) -> None:
-        rule = (
-            isinstance(x, instance) or (x is None)
-            if allow_none
-            else isinstance(x, instance)
-        )
+        check = any(isinstance(x, i) for i in instance)
+        rule = check or (x is None) if allow_none else check
 
         if not rule:
             raise TypeError(
-                f"{name} must be of type {instance} but {type(x)} is provided."
+                f"{name} must be of type {'or '.join(instance)} but {type(x)} is provided."
             )
 
         return None
@@ -283,13 +280,13 @@ def validate_generator_params(
     verbose: bool,
 ) -> None:
     if tol is not None:
-        _compose_rules(_is_instance(instance=float), _gt(rhs=0.0))(tol, "tol")
+        _compose_rules(_is_instance(int, float), _gt(rhs=0.0))(tol, "tol")
 
-    _compose_rules(_is_instance(instance=int), _gte(rhs=0))(n_iter, "n_iter")
-    _compose_rules(_is_instance(instance=float), _between(left=0.0, right=1.0))(
+    _compose_rules(_is_instance(int), _gte(rhs=0))(n_iter, "n_iter")
+    _compose_rules(_is_instance(int, float), _between(left=0.0, right=1.0))(
         damp_param, "damp_param"
     )
-    _is_instance(instance=bool)(verbose, "verbose")
+    _is_instance(bool)(verbose, "verbose")
 
     return None
 
@@ -301,25 +298,25 @@ def validate_fit_args(
     periodic: list[bool] | None,
     init_weights: np.ndarray | None,
 ) -> None:
-    _compose_rules(
-        _is_instance(instance=np.ndarray), _check_array(allowed_types=[float, int])
-    )(seeds, "seeds")
+    _compose_rules(_is_instance(np.ndarray), _check_array(allowed_types=[float, int]))(
+        seeds, "seeds"
+    )
 
     if volumes is not None:
         _compose_rules(
-            _is_instance(instance=np.ndarray), _check_array(allowed_types=[float, int])
+            _is_instance(np.ndarray), _check_array(allowed_types=[float, int])
         )(volumes, "volumes")
 
     _compose_rules(
-        _is_instance(instance=np.ndarray),
+        _is_instance(np.ndarray),
         _check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
     )(domain, "domain")
 
-    _is_instance(instance=list, allow_none=True)(periodic, "periodic")
+    _is_instance(list, allow_none=True)(periodic, "periodic")
     if periodic is not None:
         _check_periodic(periodic, "periodic")
 
-    _is_instance(instance=np.ndarray, allow_none=True)(init_weights, "init_weights")
+    _is_instance(np.ndarray, allow_none=True)(init_weights, "init_weights")
     if init_weights is not None:
         _check_array(allowed_types=[float, int])(init_weights, "init_weights")
 

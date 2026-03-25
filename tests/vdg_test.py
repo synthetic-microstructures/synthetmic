@@ -24,7 +24,7 @@ def test_pos_and_vols(
 ) -> None:
     vdg = VoronoiDiagramGenerator(
         n_iter=50,
-        damp_param=1.0,
+        damp_param=1,
         verbose=True,
     )
     vdg.fit(
