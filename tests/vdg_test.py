@@ -51,7 +51,7 @@ def test_periodic_args() -> None:
     )
 
     _, space_dim = seeds.shape
-    domain, _ = toy._create_unit_domain(space_dim=space_dim)
+    domain, _ = toy.create_unit_domain(space_dim=space_dim)
 
     periodic_list = [None, [False] * space_dim]
     results = []

@@ -5,10 +5,10 @@ import pytest
 from pysdot import OptimalTransport
 
 from synthetmic import LaguerreDiagramGenerator
+from synthetmic._internal._errors import _NotFittedError
 from synthetmic.data import toy, utils
 from synthetmic.data.toy import create_data_with_constant_volumes
 from synthetmic.data.utils import SynthetMicData
-from synthetmic.utils import NotFittedError
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def test_output_dim(const_vol_data) -> None:
 
 
 def test_ensure_fit() -> None:
-    with pytest.raises(NotFittedError):
+    with pytest.raises(_NotFittedError):
         ldg = LaguerreDiagramGenerator()
         ldg.get_centroids()
 
@@ -76,7 +76,7 @@ def test_ensure_fit() -> None:
 )
 def test_get_vertices(seeds: np.ndarray, expected: int) -> None:
     n_grains, space_dim = seeds.shape
-    domain, domain_volume = toy._create_unit_domain(space_dim=space_dim)
+    domain, domain_volume = toy.create_unit_domain(space_dim=space_dim)
     volumes = utils.create_constant_volumes(
         n_grains=n_grains, domain_volume=domain_volume
     )
@@ -112,7 +112,7 @@ def test_periodic_args() -> None:
     )
 
     n_grains, space_dim = seeds.shape
-    domain, domain_volume = toy._create_unit_domain(space_dim=space_dim)
+    domain, domain_volume = toy.create_unit_domain(space_dim=space_dim)
     volumes = utils.create_constant_volumes(
         n_grains=n_grains, domain_volume=domain_volume
     )

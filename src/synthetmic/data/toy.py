@@ -8,7 +8,7 @@ from synthetmic.data.utils import (
 )
 
 
-def _create_unit_domain(space_dim: int) -> tuple[np.ndarray, float]:
+def create_unit_domain(space_dim: int) -> tuple[np.ndarray, float]:
     match space_dim:
         case 2 | 3:
             return np.array([[0, 1]] * space_dim), 1.0
@@ -46,7 +46,7 @@ def create_data_with_constant_volumes(
     -------
     synthetmic.data.utils.SyntyhetMicData
     """
-    domain, domain_volume = _create_unit_domain(space_dim=space_dim)
+    domain, domain_volume = create_unit_domain(space_dim=space_dim)
 
     seeds = sample_random_seeds(
         domain=domain, n_grains=n_grains, random_state=random_state
@@ -99,7 +99,7 @@ def create_data_with_lognormal_volumes(
     -------
     synthetmic.data.utils.SyntyhetMicData
     """
-    domain, domain_volume = _create_unit_domain(space_dim=space_dim)
+    domain, domain_volume = create_unit_domain(space_dim=space_dim)
 
     seeds = sample_random_seeds(
         domain=domain, n_grains=n_grains, random_state=random_state

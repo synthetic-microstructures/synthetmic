@@ -7,8 +7,8 @@ import numpy as np
 import pyvista as pv
 from pysdot import OptimalTransport, PowerDiagram
 
+from synthetmic._internal._errors import _NotFittedError
 from synthetmic.utils import (
-    NotFittedError,
     add_replicants,
     build_domain,
     validate_fit_args,
@@ -135,9 +135,9 @@ class VoronoiDiagramGenerator(DiagramGenerator):
     def _update_pd(self, pd: PowerDiagram) -> None:
         self.pd_ = pd
 
-    def _ensure_fitted(self) -> NotFittedError | None:
+    def _ensure_fitted(self) -> _NotFittedError | None:
         if self.pd_ is None:
-            raise NotFittedError(
+            raise _NotFittedError(
                 f"This {self.__class__.__name__} instance is not fitted yet. "
                 f"Call 'fit' with appropriate arguments before using this generator."
             )
@@ -355,9 +355,9 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         self.max_percentage_error_ = percentage_errors.max()
         self.mean_percentage_error_ = percentage_errors.mean()
 
-    def _ensure_fitted(self) -> NotFittedError | None:
+    def _ensure_fitted(self) -> _NotFittedError | None:
         if self.optimal_transport_ is None:
-            raise NotFittedError(
+            raise _NotFittedError(
                 f"This {self.__class__.__name__} instance is not fitted yet. "
                 f"Call 'fit' with appropriate arguments before using this estimator."
             )

@@ -1,5 +1,4 @@
 import tempfile
-from enum import StrEnum, auto
 from pathlib import Path
 
 import matplotlib.colors as mcolors
@@ -12,16 +11,8 @@ from matplotlib.axes import Axes
 from vtk.numpy_interface import dataset_adapter as dsa
 from vtk.util.numpy_support import vtk_to_numpy
 
+from synthetmic._internal._consts import _PyvistaSupportedExtension
 from synthetmic.generate import DiagramGenerator
-
-
-class _PyvistaSupportedExtension(StrEnum):
-    HTML = auto()
-    SVG = auto()
-    EPS = auto()
-    PS = auto()
-    PDF = auto()
-    TEX = auto()
 
 
 def plot_2dcells_as_matplotlib_fig(
