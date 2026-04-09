@@ -1,11 +1,10 @@
 import itertools
 
 import numpy as np
-from joblib import Parallel, delayed
 from pysdot import OptimalTransport, PowerDiagram
 from pysdot.domain_types import ConvexPolyhedraAssembly
 
-from synthetmic._internal._data import _cdist_closest_points, _kdtree_closest_points
+from synthetmic._internal._data import _kdtree_closest_points
 from synthetmic._internal._validate import (
     _between,
     _check_array,
@@ -21,8 +20,6 @@ from synthetmic._internal._validate import (
 def mesh_diagram(
     points: np.ndarray,
     pd: PowerDiagram,
-    batch_size: int = 100,
-    parallel: bool = False,
     n_jobs: int = -1,
 ) -> np.ndarray:
     """
@@ -35,16 +32,8 @@ def mesh_diagram(
         Array of shape (n_points, dim) with 2D or 3D coordinates.
     pd : PowerDiagram
         Power diagram object.
-    batch_size : int, default=100
-        Number of points processed per batch.
-    parallel : bool, default=False
-        If True, process batches in parallel using joblib.
-        Recommended only for large numbers of points and/or grains
-        (seeds), where distance computation becomes expensive.
     n_jobs : int, default=-1
-        Number of parallel workers to use when `parallel=True`.
-        -1 uses all available CPU cores.
-
+        Number of parallel workers to use.
     Returns
     -------
     grain_indices : np.ndarray
@@ -62,7 +51,6 @@ def mesh_diagram(
         )
 
     weights = pd.get_weights()
-    num_points = len(points)
 
     TOL = 1e-16
     if weights is None or np.allclose(weights, TOL):
@@ -70,32 +58,14 @@ def mesh_diagram(
             points=points, all_points=all_points, workers=n_jobs
         )
 
-    if not parallel:
-        grain_indices = np.empty(num_points)
+    # Lift the seeds to d + 1 dimensions
+    extra_coords = np.sqrt(weights.max() - weights)
+    all_points = np.column_stack((all_points, extra_coords))
 
-        for i in range(0, num_points, batch_size):
-            batch = points[i : i + batch_size]
-            grain_indices[i : i + batch_size] = _cdist_closest_points(
-                points=batch, all_points=all_points, weights=weights
-            )
+    # Lift the points to 4 dimensions
+    points = np.column_stack((points, np.zeros(points.shape[0])))
 
-        return grain_indices
-
-    batches = [
-        (i, min(i + batch_size, num_points)) for i in range(0, num_points, batch_size)
-    ]
-
-    def _process_batch(start: int, end: int):
-        batch = points[start:end]
-        return _cdist_closest_points(
-            points=batch, all_points=all_points, weights=weights
-        )
-
-    results = Parallel(n_jobs=n_jobs, backend="loky")(
-        delayed(_process_batch)(start, end) for start, end in batches
-    )
-
-    return np.concatenate(results)
+    return _kdtree_closest_points(points=points, all_points=all_points, workers=n_jobs)
 
 
 def build_domain(

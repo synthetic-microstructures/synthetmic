@@ -16,9 +16,6 @@ def test_mesh_diagram() -> None:
 
     expected = np.array([0, 1, 2, 3], dtype=np.int32)
 
-    for opt in (True, False):
-        assert np.allclose(
-            expected, mesh_diagram(points=points, pd=pd, batch_size=1, parallel=opt)
-        )
+    assert np.allclose(expected, mesh_diagram(points=points, pd=pd))
 
     return None

@@ -7,13 +7,13 @@ from synthetmic.data.utils import sample_random_seeds
 
 def _kdtree_closest_points(
     points: np.ndarray,
-    all_points: np.ndarray,  # periodic: bool, size: np.ndarray
-    workers: int = 1,
+    all_points: np.ndarray,
+    boxsize: np.ndarray | None = None,
+    workers: int = -1,
 ) -> np.ndarray:
-    # tree = KDTree(data=all_points, boxsize=np.asarray(size) if periodic else None)
-    tree = KDTree(data=all_points, boxsize=None)
+    tree = KDTree(data=all_points, boxsize=boxsize)
     _, indices = tree.query(points, workers=workers)
-    return np.asarray(indices)
+    return np.asarray(indices, dtype=np.int32)
 
 
 def _cdist_closest_points(
