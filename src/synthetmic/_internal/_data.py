@@ -5,6 +5,26 @@ from scipy.spatial.distance import cdist
 from synthetmic.data.utils import sample_random_seeds
 
 
+def _map_positions(positions: np.ndarray, boxsize: np.ndarray) -> np.ndarray:
+    return np.remainder(positions, boxsize)
+
+
+def _lift_positions(positions: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    extra_coords = np.sqrt(weights.max() - weights)
+    return np.column_stack((positions, extra_coords))
+
+
+def _lift_points(points: np.ndarray) -> np.ndarray:
+    return np.column_stack((points, np.zeros(points.shape[0])))
+
+
+def _compute_non_periodic_size(max_coord: float, boxsize: np.ndarray) -> float:
+    boxsize = np.asarray(boxsize)
+    TAU = 1e-6
+
+    return np.sqrt(4 * np.sum(boxsize**2) + max_coord**2) + max_coord + TAU
+
+
 def _kdtree_closest_points(
     points: np.ndarray,
     all_points: np.ndarray,
