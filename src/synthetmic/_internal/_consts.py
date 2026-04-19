@@ -1,19 +1,19 @@
 from enum import StrEnum, auto
 
 
-class _Initializer(StrEnum):
+class Initializer(StrEnum):
     RANDOM = auto()
     BANDED = auto()
     CLUSTERED = auto()
     MIXED_BANDED_AND_RANDOM = auto()
 
 
-class _Gradient(StrEnum):
+class Gradient(StrEnum):
     INCREASING = auto()
     LARGE_AT_MIDDLE = auto()
 
 
-class _PyvistaSupportedExtension(StrEnum):
+class PyvistaSupportedExtension(StrEnum):
     HTML = auto()
     SVG = auto()
     EPS = auto()

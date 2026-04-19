@@ -3,7 +3,7 @@ from typing import Any, Callable, Type
 import numpy as np
 
 
-def _check_points(points: np.ndarray) -> None:
+def check_points(points: np.ndarray) -> None:
     points = np.asarray(points)
 
     if points.ndim != 2:
@@ -24,7 +24,7 @@ def _check_points(points: np.ndarray) -> None:
     return None
 
 
-def _gt(rhs: float) -> Callable[[float | None, str], None]:
+def gt(rhs: float) -> Callable[[float | None, str], None]:
     def _out(x: float | None, name: str) -> None:
         if x <= rhs or x is None:
             raise ValueError(f"{name} must be greater than {rhs} but {x} is given.")
@@ -34,7 +34,7 @@ def _gt(rhs: float) -> Callable[[float | None, str], None]:
     return _out
 
 
-def _gte(rhs: float) -> Callable[[float | None, str], None]:
+def gte(rhs: float) -> Callable[[float | None, str], None]:
     def _out(x: float | None, name: str) -> None:
         if x < rhs or x is None:
             raise ValueError(
@@ -45,7 +45,7 @@ def _gte(rhs: float) -> Callable[[float | None, str], None]:
     return _out
 
 
-def _is_instance(
+def is_instance(
     *instance: tuple[Type, ...], allow_none: bool = False
 ) -> Callable[[Any, str], None]:
     def _out(x: Any, name: str) -> None:
@@ -62,7 +62,7 @@ def _is_instance(
     return _out
 
 
-def _between(
+def between(
     left: float,
     right: float,
     left_open: bool = False,
@@ -92,7 +92,7 @@ def _between(
     return _out
 
 
-def _compose_rules(*args) -> Callable:
+def compose_rules(*args) -> Callable:
     rule_fns = [arg for arg in args if callable(arg)]
 
     def _out(x: Any, name: str):
@@ -104,7 +104,7 @@ def _compose_rules(*args) -> Callable:
     return _out
 
 
-def _check_array(
+def check_array(
     allowed_types: list[Type], allowed_shapes: list[tuple[int, int]] | None = None
 ) -> Callable[[np.ndarray, str], None]:
     def _out(x: np.ndarray, name: str) -> None:
@@ -127,7 +127,7 @@ def _check_array(
     return _out
 
 
-def _check_periodic(x: list[bool], name: str) -> None:
+def check_periodic(x: list[bool], name: str) -> None:
     if len(x) not in (2, 3):
         raise ValueError(
             f"invalid {name} length {len(x)}; expected length to be 2 or 3."

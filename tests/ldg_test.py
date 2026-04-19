@@ -5,7 +5,7 @@ import pytest
 from pysdot import OptimalTransport
 
 from synthetmic import LaguerreDiagramGenerator
-from synthetmic._internal._errors import _NotFittedError
+from synthetmic._internal._errors import NotFittedError
 from synthetmic.data import toy, utils
 from synthetmic.data.toy import create_data_with_constant_volumes
 from synthetmic.data.utils import SynthetMicData
@@ -62,7 +62,7 @@ def test_output_dim(const_vol_data) -> None:
 
 
 def test_ensure_fit() -> None:
-    with pytest.raises(_NotFittedError):
+    with pytest.raises(NotFittedError):
         ldg = LaguerreDiagramGenerator()
         ldg.get_centroids()
 

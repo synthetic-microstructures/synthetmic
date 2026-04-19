@@ -40,7 +40,7 @@ def mesh_diagram(
     """
 
     points = np.asarray(points)
-    vd._check_points(points)
+    vd.check_points(points)
 
     positions = pd.get_positions()
     if points.shape[1] != positions.shape[1]:
@@ -50,12 +50,12 @@ def mesh_diagram(
         )
     weights = pd.get_weights()
 
-    lifted_points = dt._lift_points(points)
+    lifted_points = dt.lift_points(points)
 
     if domain is None:
-        lifted_positions = dt._lift_positions(positions=positions, weights=weights)
+        lifted_positions = dt.lift_positions(positions=positions, weights=weights)
 
-        return dt._kdtree_closest_points(
+        return dt.kdtree_closest_points(
             points=lifted_points,
             all_points=lifted_positions,
             workers=n_jobs,
@@ -65,17 +65,17 @@ def mesh_diagram(
     # Map  positions back to domain before lifting.
     domain = np.asarray(domain)
     boxsize = domain[:, 1] - domain[:, 0]
-    mapped_positions = dt._map_positions(positions=positions, boxsize=boxsize)
-    lifted_positions = dt._lift_positions(positions=mapped_positions, weights=weights)
+    mapped_positions = dt.map_positions(positions=positions, boxsize=boxsize)
+    lifted_positions = dt.lift_positions(positions=mapped_positions, weights=weights)
 
     boxsize = np.append(
         boxsize,
-        dt._compute_non_periodic_size(
+        dt.compute_non_periodic_size(
             max_coord=lifted_positions[:, -1].max(), boxsize=boxsize
         ),
     )
 
-    return dt._kdtree_closest_points(
+    return dt.kdtree_closest_points(
         points=lifted_points,
         all_points=lifted_positions,
         workers=n_jobs,
@@ -141,13 +141,13 @@ def validate_generator_params(
     verbose: bool,
 ) -> None:
     if tol is not None:
-        vd._compose_rules(vd._is_instance(int, float), vd._gt(rhs=0.0))(tol, "tol")
+        vd.compose_rules(vd.is_instance(int, float), vd.gt(rhs=0.0))(tol, "tol")
 
-    vd._compose_rules(vd._is_instance(int), vd._gte(rhs=0))(n_iter, "n_iter")
-    vd._compose_rules(vd._is_instance(int, float), vd._between(left=0.0, right=1.0))(
+    vd.compose_rules(vd.is_instance(int), vd.gte(rhs=0))(n_iter, "n_iter")
+    vd.compose_rules(vd.is_instance(int, float), vd.between(left=0.0, right=1.0))(
         damp_param, "damp_param"
     )
-    vd._is_instance(bool)(verbose, "verbose")
+    vd.is_instance(bool)(verbose, "verbose")
 
     return None
 
@@ -159,27 +159,27 @@ def validate_fit_args(
     periodic: list[bool] | None,
     init_weights: np.ndarray | None,
 ) -> None:
-    vd._compose_rules(
-        vd._is_instance(np.ndarray), vd._check_array(allowed_types=[float, int])
+    vd.compose_rules(
+        vd.is_instance(np.ndarray), vd.check_array(allowed_types=[float, int])
     )(seeds, "seeds")
 
     if volumes is not None:
-        vd._compose_rules(
-            vd._is_instance(np.ndarray), vd._check_array(allowed_types=[float, int])
+        vd.compose_rules(
+            vd.is_instance(np.ndarray), vd.check_array(allowed_types=[float, int])
         )(volumes, "volumes")
 
-    vd._compose_rules(
-        vd._is_instance(np.ndarray),
-        vd._check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
+    vd.compose_rules(
+        vd.is_instance(np.ndarray),
+        vd.check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
     )(domain, "domain")
 
-    vd._is_instance(list, allow_none=True)(periodic, "periodic")
+    vd.is_instance(list, allow_none=True)(periodic, "periodic")
     if periodic is not None:
-        vd._check_periodic(periodic, "periodic")
+        vd.check_periodic(periodic, "periodic")
 
-    vd._is_instance(np.ndarray, allow_none=True)(init_weights, "init_weights")
+    vd.is_instance(np.ndarray, allow_none=True)(init_weights, "init_weights")
     if init_weights is not None:
-        vd._check_array(allowed_types=[float, int])(init_weights, "init_weights")
+        vd.check_array(allowed_types=[float, int])(init_weights, "init_weights")
 
     # check if the number of samples match
     num_samples = []
