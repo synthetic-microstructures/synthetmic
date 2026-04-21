@@ -4,8 +4,8 @@ import numpy as np
 from pysdot import PowerDiagram
 from pysdot.domain_types import ConvexPolyhedraAssembly
 
-from synthetmic.data.paper import create_example5p5_data
 from synthetmic.data.toy import (
+    create_data_with_lognormal_volumes,
     create_periodicity,
     create_unit_domain,
     sample_random_seeds,
@@ -57,7 +57,7 @@ def test_mesh_diagram_with_periodic_domain() -> None:
 
 
 def test_mesh_diagram_against_bruteforce() -> None:
-    data = create_example5p5_data(is_periodic=True)
+    data = create_data_with_lognormal_volumes(is_periodic=True, random_state=40)
     g = LaguerreDiagramGenerator(verbose=False)
     g.fit(**asdict(data))
 
