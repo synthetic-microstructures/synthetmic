@@ -11,7 +11,7 @@ from synthetmic.plot import plot_2dcells_as_matplotlib_fig, plot_cells_as_pyvist
 def voronoi_with_random_seeds(
     space_dim: int, n_grains: int, n_iter: int, is_periodic: bool, save_path: str | Path
 ) -> None:
-    domain, _ = toy._create_unit_domain(space_dim)
+    domain, _ = toy.create_unit_domain(space_dim)
     seeds = toy.sample_random_seeds(domain=domain, n_grains=n_grains)
 
     vdg = VoronoiDiagramGenerator(

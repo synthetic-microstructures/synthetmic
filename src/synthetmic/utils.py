@@ -1,18 +1,17 @@
 import itertools
-from typing import Any, Callable, Type
 
 import numpy as np
-from joblib import Parallel, delayed
 from pysdot import OptimalTransport, PowerDiagram
 from pysdot.domain_types import ConvexPolyhedraAssembly
-from scipy.spatial.distance import cdist
+
+from synthetmic._internal import _data as dt
+from synthetmic._internal import _validate as vd
 
 
 def mesh_diagram(
     points: np.ndarray,
     pd: PowerDiagram,
-    batch_size: int = 100,
-    parallel: bool = False,
+    domain: np.ndarray | None = None,
     n_jobs: int = -1,
 ) -> np.ndarray:
     """
@@ -21,63 +20,67 @@ def mesh_diagram(
 
     Parameters
     ----------
-    points : np.ndarray
+    points : numpy.ndarray
         Array of shape (n_points, dim) with 2D or 3D coordinates.
-    pd : PowerDiagram
+    pd : pysdot.PowerDiagram
         Power diagram object.
-    batch_size : int, default=100
-        Number of points processed per batch.
-    parallel : bool, default=False
-        If True, process batches in parallel using joblib.
-        Recommended only for large numbers of points and/or grains
-        (seeds), where distance computation becomes expensive.
     n_jobs : int, default=-1
-        Number of parallel workers to use when `parallel=True`.
-        -1 uses all available CPU cores.
+        Number of parallel workers to use.
+    domain: numpy.ndarray or None, default=None
+        If not None, it represents the minimum and maximum coordinates of the box
+        in each of the d dimensions (d=2,3) and the underlying power diagram will
+        be treated as periodic in all dimensions. The positions of the power diagram will be
+        mapped to the domain.
 
     Returns
     -------
-    grain_indices : np.ndarray
-        Array of shape (n_points,) where grain_indices[i] is
+    grain_indices : numpy.ndarray
+        Array of shape (len(points),) where grain_indices[i] is
         the index of the grain containing point i.
     """
-    _check_points(points)
 
-    x = pd.get_positions()
+    points = np.asarray(points)
+    vd.check_points(points)
 
-    if points.shape[1] != x.shape[1]:
+    positions = pd.get_positions()
+    if points.shape[1] != positions.shape[1]:
         raise ValueError(
-            "`points` and power diagram positions must have the same "
-            f"number of coordinates, but got {points.shape[1]} vs {x.shape[1]}."
+            "`points` and diagram positions must have the same "
+            f"number of coordinates, but got {points.shape[1]} vs {positions.shape[1]}."
+        )
+    weights = pd.get_weights()
+
+    lifted_points = dt.lift_points(points)
+
+    if domain is None:
+        lifted_positions = dt.lift_positions(positions=positions, weights=weights)
+
+        return dt.kdtree_closest_points(
+            points=lifted_points,
+            all_points=lifted_positions,
+            workers=n_jobs,
+            boxsize=None,
         )
 
-    w = pd.get_weights()
-    num_points = len(points)
+    # Map  positions back to domain before lifting.
+    domain = np.asarray(domain)
+    boxsize = domain[:, 1] - domain[:, 0]
+    mapped_positions = dt.map_positions(positions=positions, boxsize=boxsize)
+    lifted_positions = dt.lift_positions(positions=mapped_positions, weights=weights)
 
-    if not parallel:
-        grain_indices = np.empty(num_points, dtype=np.int32)
-
-        for i in range(0, num_points, batch_size):
-            batch = points[i : i + batch_size]
-            squared_distances = cdist(batch, x, metric="sqeuclidean")
-            grain_indices[i : i + batch_size] = np.argmin(squared_distances - w, axis=1)
-
-        return grain_indices
-
-    batches = [
-        (i, min(i + batch_size, num_points)) for i in range(0, num_points, batch_size)
-    ]
-
-    def _process_batch(start: int, end: int):
-        batch = points[start:end]
-        squared_distances = cdist(batch, x, metric="sqeuclidean")
-        return np.argmin(squared_distances - w, axis=1)
-
-    results = Parallel(n_jobs=n_jobs, backend="loky")(
-        delayed(_process_batch)(start, end) for start, end in batches
+    boxsize = np.append(
+        boxsize,
+        dt.compute_non_periodic_size(
+            max_coord=lifted_positions[:, -1].max(), boxsize=boxsize
+        ),
     )
 
-    return np.concatenate(results)
+    return dt.kdtree_closest_points(
+        points=lifted_points,
+        all_points=lifted_positions,
+        workers=n_jobs,
+        boxsize=boxsize,
+    )
 
 
 def build_domain(
@@ -131,148 +134,6 @@ def add_replicants(
     return None
 
 
-class NotFittedError(ValueError, AttributeError):
-    """
-    Raised when attempting to use an unfitted generator.
-    """
-
-
-def _check_points(points: np.ndarray) -> None:
-    points = np.asarray(points)
-
-    if points.ndim != 2:
-        raise ValueError(
-            f"`points` must be a 2D array of shape (n, d). "
-            f"Got array with shape {points.shape}."
-        )
-
-    if points.shape[0] == 0:
-        raise ValueError("`points` must contain at least one point.")
-
-    if points.shape[1] not in (2, 3):
-        raise ValueError(
-            f"`points` must have 2 or 3 columns (2D or 3D coordinates). "
-            f"Got {points.shape[1]}."
-        )
-
-    return None
-
-
-def _gt(rhs: float) -> Callable[[float | None, str], None]:
-    def _out(x: float | None, name: str) -> None:
-        if x <= rhs or x is None:
-            raise ValueError(f"{name} must be greater than {rhs} but {x} is given.")
-
-        return None
-
-    return _out
-
-
-def _gte(rhs: float) -> Callable[[float | None, str], None]:
-    def _out(x: float | None, name: str) -> None:
-        if x < rhs or x is None:
-            raise ValueError(
-                f"{name} must be greater than or equal to {rhs} but {x} is given."
-            )
-        return None
-
-    return _out
-
-
-def _is_instance(
-    *instance: tuple[Type, ...], allow_none: bool = False
-) -> Callable[[Any, str], None]:
-    def _out(x: Any, name: str) -> None:
-        check = any(isinstance(x, i) for i in instance)
-        rule = check or (x is None) if allow_none else check
-
-        if not rule:
-            raise TypeError(
-                f"{name} must be of type {'or '.join(instance)} but {type(x)} is provided."
-            )
-
-        return None
-
-    return _out
-
-
-def _between(
-    left: float,
-    right: float,
-    left_open: bool = False,
-    right_open: bool = False,
-    both_open: bool = False,
-) -> Callable[[float | None, str], None]:
-    def _rule(x: float) -> bool:
-        if left_open:
-            return left < x <= right
-
-        if right_open:
-            return left <= x < right
-
-        if both_open:
-            return left < x < right
-
-        return left <= x <= right
-
-    def _out(x: float | None, name: str) -> None:
-        if (not _rule(x)) or x is None:
-            raise ValueError(
-                f"{name} must be between {left} and {right}, but {x} is given."
-            )
-
-        return None
-
-    return _out
-
-
-def _compose_rules(*args) -> Callable:
-    rule_fns = [arg for arg in args if callable(arg)]
-
-    def _out(x: Any, name: str):
-        for rule_fn in rule_fns:
-            res = rule_fn(x, name)
-            if res is not None:
-                return res
-
-    return _out
-
-
-def _check_array(
-    allowed_types: list[Type], allowed_shapes: list[tuple[int, int]] | None = None
-) -> Callable[[np.ndarray, str], None]:
-    def _out(x: np.ndarray, name: str) -> None:
-        if x.size == 0:
-            raise ValueError(f"{name} is empty. Input required a non-empty ndarray.")
-
-        if x.dtype not in allowed_types:
-            raise ValueError(
-                f"{name} contain elements of wrong type {x.dtype}. Allowed types are {allowed_types}."
-            )
-
-        if allowed_shapes is not None:
-            if x.shape not in allowed_shapes:
-                raise ValueError(
-                    f"{name} hase a wrong shape {x.shape}. Allowed shapes are {allowed_shapes}."
-                )
-
-        return None
-
-    return _out
-
-
-def _check_periodic(x: list[bool], name: str) -> None:
-    if len(x) not in (2, 3):
-        raise ValueError(
-            f"invalid {name} length {len(x)}; expected length to be 2 or 3."
-        )
-
-    if not all(isinstance(var, bool) for var in x):
-        raise ValueError(f"all entries in {name} must be bool.")
-
-    return None
-
-
 def validate_generator_params(
     tol: float | None,
     n_iter: int,
@@ -280,13 +141,13 @@ def validate_generator_params(
     verbose: bool,
 ) -> None:
     if tol is not None:
-        _compose_rules(_is_instance(int, float), _gt(rhs=0.0))(tol, "tol")
+        vd.compose_rules(vd.is_instance(int, float), vd.gt(rhs=0.0))(tol, "tol")
 
-    _compose_rules(_is_instance(int), _gte(rhs=0))(n_iter, "n_iter")
-    _compose_rules(_is_instance(int, float), _between(left=0.0, right=1.0))(
+    vd.compose_rules(vd.is_instance(int), vd.gte(rhs=0))(n_iter, "n_iter")
+    vd.compose_rules(vd.is_instance(int, float), vd.between(left=0.0, right=1.0))(
         damp_param, "damp_param"
     )
-    _is_instance(bool)(verbose, "verbose")
+    vd.is_instance(bool)(verbose, "verbose")
 
     return None
 
@@ -298,27 +159,27 @@ def validate_fit_args(
     periodic: list[bool] | None,
     init_weights: np.ndarray | None,
 ) -> None:
-    _compose_rules(_is_instance(np.ndarray), _check_array(allowed_types=[float, int]))(
-        seeds, "seeds"
-    )
+    vd.compose_rules(
+        vd.is_instance(np.ndarray), vd.check_array(allowed_types=[float, int])
+    )(seeds, "seeds")
 
     if volumes is not None:
-        _compose_rules(
-            _is_instance(np.ndarray), _check_array(allowed_types=[float, int])
+        vd.compose_rules(
+            vd.is_instance(np.ndarray), vd.check_array(allowed_types=[float, int])
         )(volumes, "volumes")
 
-    _compose_rules(
-        _is_instance(np.ndarray),
-        _check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
+    vd.compose_rules(
+        vd.is_instance(np.ndarray),
+        vd.check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
     )(domain, "domain")
 
-    _is_instance(list, allow_none=True)(periodic, "periodic")
+    vd.is_instance(list, allow_none=True)(periodic, "periodic")
     if periodic is not None:
-        _check_periodic(periodic, "periodic")
+        vd.check_periodic(periodic, "periodic")
 
-    _is_instance(np.ndarray, allow_none=True)(init_weights, "init_weights")
+    vd.is_instance(np.ndarray, allow_none=True)(init_weights, "init_weights")
     if init_weights is not None:
-        _check_array(allowed_types=[float, int])(init_weights, "init_weights")
+        vd.check_array(allowed_types=[float, int])(init_weights, "init_weights")
 
     # check if the number of samples match
     num_samples = []

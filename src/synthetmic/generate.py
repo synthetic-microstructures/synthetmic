@@ -7,8 +7,8 @@ import numpy as np
 import pyvista as pv
 from pysdot import OptimalTransport, PowerDiagram
 
+from synthetmic._internal._errors import NotFittedError
 from synthetmic.utils import (
-    NotFittedError,
     add_replicants,
     build_domain,
     validate_fit_args,

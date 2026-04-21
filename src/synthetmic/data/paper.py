@@ -1,145 +1,21 @@
 import math
-from enum import StrEnum, auto
 
 import numpy as np
 
+from synthetmic._internal._consts import Gradient, Initializer
+from synthetmic._internal._data import (
+    calulate_rel_vols,
+    create_banded_points,
+    create_layered_points,
+    create_subdomains,
+    generate_discs,
+    sample_points_outside_discs,
+)
 from synthetmic.data.utils import (
     SynthetMicData,
     create_periodicity,
     sample_random_seeds,
 )
-
-
-class _Initializer(StrEnum):
-    RANDOM = auto()
-    BANDED = auto()
-    CLUSTERED = auto()
-    MIXED_BANDED_AND_RANDOM = auto()
-
-
-class _Gradient(StrEnum):
-    INCREASING = auto()
-    LARGE_AT_MIDDLE = auto()
-
-
-def _calulate_rel_vols(n1: int, n2: int, r: int) -> np.ndarray:
-    vols = np.concatenate((np.ones(n1), r * np.ones(n2)))
-
-    return vols / np.sum(vols)
-
-
-def _create_layered_points(
-    n_layer_arr: np.ndarray, r_layer_arr: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    if isinstance(n_layer_arr, list):
-        n_layer_arr = np.array(n_layer_arr)
-
-    if isinstance(n_layer_arr, list):
-        r_layer_arr = np.array(r_layer_arr)
-
-    # Relative volumes of the grains (relative to the volume of the box)
-    rel_vols = np.repeat(r_layer_arr, n_layer_arr)
-    total_vol: float = (n_layer_arr * r_layer_arr).sum()
-    rel_vols = rel_vols / total_vol
-
-    # Thickness of each layer
-    t_layer_arr = n_layer_arr * r_layer_arr / total_vol
-    o_layer_arr = t_layer_arr.cumsum()
-    o_layer_arr = np.hstack(([0], o_layer_arr[:-1]))
-
-    # Deduce the z-coord
-    z_coord = []
-    for i, n in enumerate(n_layer_arr):
-        z_coord.extend((o_layer_arr[i] + t_layer_arr[i] * np.random.rand(n)).tolist())
-
-    DIM = 3
-    z_coord = np.array(z_coord)
-    xy_coord = np.random.rand(n_layer_arr.sum(), DIM - 1)
-
-    return np.column_stack((xy_coord, z_coord)), rel_vols
-
-
-def _create_subdomains(domain: np.ndarray, n_subdomains: int) -> list[np.ndarray]:
-    x_min, x_max = domain[0]
-    y_min, y_max = domain[1]
-
-    x_divisions = np.linspace(x_min, x_max, n_subdomains + 1)
-
-    subdomains = []
-    for i in range(n_subdomains):
-        subdomain = np.array([[x_divisions[i], x_divisions[i + 1]], [y_min, y_max]])
-        subdomains.append(subdomain)
-
-    return subdomains
-
-
-def _create_banded_points(
-    subdomains: list[np.ndarray],
-    n_points_small: int,
-    n_points_large: int,
-    volume_frac: float,
-) -> tuple[list, list]:
-    X = []
-    y = []
-    for i, subdomain in enumerate(subdomains):
-        if i % 2 == 0:
-            X.extend(sample_random_seeds(subdomain, n_points_large).tolist())
-            y.extend([20 * volume_frac] * n_points_large)
-        else:
-            X.extend(sample_random_seeds(subdomain, n_points_small).tolist())
-            y.extend([volume_frac] * n_points_small)
-
-    return X, y
-
-
-def _create_uniform_disc_points(
-    center: tuple[float, float], radius: float, n_points: int
-) -> np.ndarray:
-    r = radius * np.sqrt(np.random.random(n_points))
-    theta = 2 * np.pi * np.random.random(n_points)
-    x = center[0] + r * np.cos(theta)
-    y = center[1] + r * np.sin(theta)
-
-    return np.column_stack([x, y])
-
-
-def _generate_discs(
-    centers: list[tuple[float, float]], radius: float, n_points: int
-) -> list[np.ndarray]:
-    all_points = []
-
-    for center in centers:
-        points = _create_uniform_disc_points(center, radius, n_points)
-        all_points.append(points)
-
-    return all_points
-
-
-def _sample_points_outside_discs(
-    rect: np.ndarray,
-    disc_centers: list[tuple[float, float]],
-    disc_radius: float,
-    n_points: int,
-) -> np.ndarray:
-    accepted = []
-    batch_size = max(1000, n_points * 2)
-    radius_sq = disc_radius**2
-    centers_array = np.array(disc_centers)
-
-    while len(accepted) < n_points:
-        points = sample_random_seeds(rect, batch_size)
-
-        dists_sq = np.sum(
-            (points[:, np.newaxis, :] - centers_array[np.newaxis, :, :]) ** 2, axis=2
-        )
-
-        outside_mask = np.all(dists_sq > radius_sq, axis=1)
-
-        valid_points = points[outside_mask]
-        accepted.extend(valid_points.tolist())
-
-    accepted = np.array(accepted[:n_points])
-    return accepted
 
 
 def create_example3_data(is_periodic: bool) -> SynthetMicData:
@@ -213,17 +89,17 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
     domain = np.array([[0, 3], [0, 2]])
 
     match initializer:
-        case _Initializer.RANDOM:
+        case Initializer.RANDOM:
             y = np.zeros(N1 + N2)
             y[:N1] = AREA_FRAC
             y[N1:] = 20 * AREA_FRAC
 
             X = sample_random_seeds(domain, N1 + N2)
 
-        case _Initializer.BANDED:
-            subdomains = _create_subdomains(domain=domain, n_subdomains=7)
+        case Initializer.BANDED:
+            subdomains = create_subdomains(domain=domain, n_subdomains=7)
 
-            X, y = _create_banded_points(
+            X, y = create_banded_points(
                 subdomains=subdomains,
                 n_points_small=math.ceil(N1 / 3),
                 n_points_large=math.ceil(N2 / 4),
@@ -232,14 +108,14 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
             X = np.array(X)[: N1 + N2]
             y = np.array(y)[: N1 + N2]
 
-        case _Initializer.CLUSTERED:
+        case Initializer.CLUSTERED:
             X = []
             y = []
 
             DISC_CENTERS = [(0.6, 0.6), (2.4, 0.6), (1.5, 1.5)]
             DISC_RADIUS = 0.2
 
-            in_disc_points = _generate_discs(
+            in_disc_points = generate_discs(
                 centers=DISC_CENTERS,
                 radius=DISC_RADIUS,
                 n_points=math.ceil(N1 / 3),
@@ -253,7 +129,7 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
             y = y[:-1]
 
             # generate points outside circular discs
-            out_disc_points = _sample_points_outside_discs(
+            out_disc_points = sample_points_outside_discs(
                 rect=domain,
                 disc_centers=DISC_CENTERS,
                 disc_radius=DISC_RADIUS,
@@ -265,11 +141,11 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
             X = np.array(X)
             y = np.array(y)
 
-        case _Initializer.MIXED_BANDED_AND_RANDOM:
-            subdomains = _create_subdomains(domain=domain, n_subdomains=7)
+        case Initializer.MIXED_BANDED_AND_RANDOM:
+            subdomains = create_subdomains(domain=domain, n_subdomains=7)
 
             n_points_small = math.ceil(N1 / 4)
-            X, y = _create_banded_points(
+            X, y = create_banded_points(
                 subdomains=subdomains,
                 n_points_small=n_points_small,
                 n_points_large=math.ceil(N2 / 4),
@@ -285,7 +161,7 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
 
         case _:
             raise ValueError(
-                f"initializer must be one of {', '.join(_Initializer)}; but {initializer} was given."
+                f"initializer must be one of {', '.join(Initializer)}; but {initializer} was given."
             )
 
     periodic = create_periodicity(domain.shape[0], is_periodic)
@@ -320,9 +196,9 @@ def create_example4b_data(gradient: str, is_periodic: bool) -> SynthetMicData:
     synthetmic.data.utils.SynthetMicData
     """
 
-    if gradient not in _Gradient:
+    if gradient not in Gradient:
         raise ValueError(
-            f"gradient must be one of {', '.join(_Gradient)}; but {gradient} was given."
+            f"gradient must be one of {', '.join(Gradient)}; but {gradient} was given."
         )
 
     N = 1000
@@ -344,7 +220,7 @@ def create_example4b_data(gradient: str, is_periodic: bool) -> SynthetMicData:
 
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
-    if gradient == _Gradient.INCREASING:
+    if gradient == Gradient.INCREASING:
         return SynthetMicData(
             seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
         )
@@ -395,7 +271,7 @@ def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> SynthetM
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
     X = sample_random_seeds(domain, n_grains)
-    target_vols = domain_vol * _calulate_rel_vols(n_grains // 2, n_grains // 2, r)
+    target_vols = domain_vol * calulate_rel_vols(n_grains // 2, n_grains // 2, r)
 
     return SynthetMicData(
         seeds=X,
@@ -441,7 +317,7 @@ def create_example5p4_data(is_periodic: bool) -> SynthetMicData:
     r_layer_arr = np.array([1, 0.05, 1])
 
     # Target volumes and initial seed locations
-    X, rel_vols = _create_layered_points(n_layer_arr, r_layer_arr)
+    X, rel_vols = create_layered_points(n_layer_arr, r_layer_arr)
     X = X @ np.diag([L1, L2, L3])
     y = rel_vols * domain_vol
 

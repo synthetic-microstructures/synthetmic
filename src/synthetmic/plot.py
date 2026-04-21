@@ -1,5 +1,4 @@
 import tempfile
-from enum import StrEnum, auto
 from pathlib import Path
 
 import matplotlib.colors as mcolors
@@ -12,16 +11,8 @@ from matplotlib.axes import Axes
 from vtk.numpy_interface import dataset_adapter as dsa
 from vtk.util.numpy_support import vtk_to_numpy
 
+from synthetmic._internal._consts import PyvistaSupportedExtension
 from synthetmic.generate import DiagramGenerator
-
-
-class _PyvistaSupportedExtension(StrEnum):
-    HTML = auto()
-    SVG = auto()
-    EPS = auto()
-    PS = auto()
-    PDF = auto()
-    TEX = auto()
 
 
 def plot_2dcells_as_matplotlib_fig(
@@ -255,8 +246,8 @@ def plot_cells_as_pyvista_fig(
     if save_path is not None:
         ext = str(save_path).split(".")[-1].lower()
 
-        if ext in _PyvistaSupportedExtension:
-            if ext == _PyvistaSupportedExtension.HTML:
+        if ext in PyvistaSupportedExtension:
+            if ext == PyvistaSupportedExtension.HTML:
                 plotter.export_html(save_path)
 
             else:
@@ -264,7 +255,7 @@ def plot_cells_as_pyvista_fig(
 
         else:
             raise ValueError(
-                f"Invalid file extension: {ext}. Extension must be one of [{', '.join(_PyvistaSupportedExtension)}]."
+                f"Invalid file extension: {ext}. Extension must be one of [{', '.join(PyvistaSupportedExtension)}]."
             )
 
     return plotter
