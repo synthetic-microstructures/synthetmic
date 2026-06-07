@@ -87,14 +87,15 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
     N2 = 200
 
     domain = np.array([[0, 3], [0, 2]])
+    n_grains = N1 + N2
 
     match initializer:
         case Initializer.RANDOM:
-            y = np.zeros(N1 + N2)
+            y = np.zeros(n_grains)
             y[:N1] = AREA_FRAC
             y[N1:] = 20 * AREA_FRAC
 
-            X = sample_random_seeds(domain, N1 + N2)
+            X = sample_random_seeds(domain, n_grains)
 
         case Initializer.BANDED:
             subdomains = create_subdomains(domain=domain, n_subdomains=7)
@@ -105,8 +106,12 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
                 n_points_large=math.ceil(N2 / 4),
                 volume_frac=AREA_FRAC,
             )
-            X = np.array(X)[: N1 + N2]
-            y = np.array(y)[: N1 + N2]
+
+            X = np.array(X)[:n_grains]
+            y = np.array(y)[:n_grains]
+
+            # Add residuals to areas so that their sum equals to domain area.
+            y += (np.prod(domain[:, 1] - domain[:, 0]) - y.sum()) / n_grains
 
         case Initializer.CLUSTERED:
             X = []

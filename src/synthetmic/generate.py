@@ -17,6 +17,9 @@ from synthetmic.utils import (
 
 
 class DiagramGenerator(ABC):
+    _pd: PowerDiagram | None = None
+    _space_dim: int | None
+
     def __init__(self, verbose: bool) -> None:
         self.verbose = verbose
 
@@ -25,67 +28,100 @@ class DiagramGenerator(ABC):
         pass
 
     @abstractmethod
-    def get_fitted_volumes(self) -> np.ndarray:
-        pass
-
-    @abstractmethod
-    def get_mesh(self) -> pv.PolyData | pv.UnstructuredGrid:
-        pass
-
-    @abstractmethod
-    def get_positions(self) -> np.ndarray:
-        pass
-
-    @abstractmethod
-    def get_centroids(self) -> np.ndarray:
-        pass
-
-    @abstractmethod
-    def get_vertices(self) -> dict[int, list]:
-        pass
-
-    @abstractmethod
-    def get_weights(self) -> np.ndarray:
-        pass
-
-    @abstractmethod
-    def diagram_to_vtk(self, filename: str | Path) -> None:
-        pass
-
-    @abstractmethod
     def get_params(self) -> dict[str, Any]:
         pass
 
-    def _print_msg(self, msg: str) -> None:
-        if self.verbose:
-            print(msg)
+    @property
+    def pd_(self):
+        if self._pd is None:
+            self._raise_not_fitted_error()
 
-        return None
+        return self._pd
 
-    def _get_mesh(self, pd: PowerDiagram) -> pv.UnstructuredGrid | pv.PolyData:
+    @property
+    def space_dim_(self):
+        if self._space_dim is None:
+            self._raise_not_fitted_error()
+
+        return self._space_dim
+
+    def get_fitted_volumes(self) -> np.ndarray:
+        """
+        Get the computed diagram cell volumes.
+        """
+        return self.pd_.integrals()
+
+    def get_mesh(self) -> pv.UnstructuredGrid | pv.PolyData:
+        """
+        Get the underlying diagram mesh as a pyvista PolyData or UnstructuredGrid data object.
+        """
+
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".vtk", delete=True
         ) as tmp_file:
             filename = tmp_file.name
 
-            pd.display_vtk(filename, points=None, centroids=None)
+            self.pd_.display_vtk(filename, points=None, centroids=None)
 
             mesh = pv.read(filename)
 
         return mesh
 
-    def _get_vertices(self, pd: PowerDiagram, space_dim: int) -> dict[int, list]:
+    def get_positions(self) -> np.ndarray:
+        """
+        Get the final positions of seeds.
+        """
+
+        return self.pd_.get_positions()
+
+    def get_centroids(self) -> np.ndarray:
+        """
+        Get the centroids of the cells in the Voronoi diagram.
+        """
+
+        return self.pd_.centroids()
+
+    def get_vertices(self) -> dict[int, list]:
+        """
+        Get the vertices of cells in the diagram.
+
+        Return
+        ------
+        A dictionary with keys as cell ids and values as the
+        corresponding vertices.
+
+        In 2D, the format looks like this:
+
+        {
+            0: [v_1, v_2, ...],
+            ...
+            n-1: [v_1, v_2, ...],
+
+        }
+        where n is the number of cells or grains.
+
+        In 3D, the format looks like this:
+
+        {
+            0: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
+            ...
+            n-1: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
+
+        }
+        where n is the number of cells or grains. Note that the inner
+        list of vertices for each cell corresponds to the face vertices.
+        """
         res = {}
 
-        if space_dim == 2:
-            offsets, coords = pd.cell_polyhedra()
+        if self.space_dim_ == 2:
+            offsets, coords = self.pd_.cell_polyhedra()
 
             for i in range(len(offsets) - 1):
                 s, e = offsets[i : i + 2]
                 res[i] = coords[s:e].tolist()
 
-        elif space_dim == 3:
-            offsets_polyhedra, offsets_polygon, coords = pd.cell_polyhedra()
+        elif self.space_dim_ == 3:
+            offsets_polyhedra, offsets_polygon, coords = self.pd_.cell_polyhedra()
 
             for i in range(len(offsets_polyhedra) - 1):
                 s1, e1 = offsets_polyhedra[i : i + 2]
@@ -103,6 +139,39 @@ class DiagramGenerator(ABC):
                 res[i] = cell_vertices
 
         return res
+
+    def get_weights(self) -> np.ndarray:
+        """
+        Get the weights of the diagram.
+        """
+
+        return self.pd_.get_weights()
+
+    def diagram_to_vtk(self, filename: str | Path) -> None:
+        """
+        Write the generated diagram to .vkt file; filename must ends with .vtk.
+        """
+
+        self.pd_.display_vtk(filename=filename, points=False, centroids=False)
+
+        return None
+
+    def _set_pd(self, pd: PowerDiagram) -> None:
+        self._pd = pd
+
+        return None
+
+    def _print_msg(self, msg: str) -> None:
+        if self.verbose:
+            print(msg)
+
+        return None
+
+    def _raise_not_fitted_error(self) -> None:
+        raise NotFittedError(
+            f"This {self.__class__.__name__} instance is not fitted yet. "
+            f"Call 'fit' with appropriate arguments before using this instance."
+        )
 
 
 class VoronoiDiagramGenerator(DiagramGenerator):
@@ -123,26 +192,18 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         n_iter: int = 5,
         damp_param: float = 1.0,
         verbose: bool = True,
-    ):
+    ) -> None:
+        validate_generator_params(
+            tol=None,
+            n_iter=n_iter,
+            damp_param=damp_param,
+            verbose=verbose,
+        )
+
         super().__init__(verbose)
 
         self.n_iter = n_iter
         self.damp_param = damp_param
-
-        self.pd_: PowerDiagram | None = None
-        self.space_dim_: int | None = None
-
-    def _update_pd(self, pd: PowerDiagram) -> None:
-        self.pd_ = pd
-
-    def _ensure_fitted(self) -> NotFittedError | None:
-        if self.pd_ is None:
-            raise NotFittedError(
-                f"This {self.__class__.__name__} instance is not fitted yet. "
-                f"Call 'fit' with appropriate arguments before using this generator."
-            )
-
-        return None
 
     def fit(
         self,
@@ -171,13 +232,6 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         synthetmic.generate.VoronoiDiagramGenerator
         """
 
-        validate_generator_params(
-            tol=None,
-            n_iter=self.n_iter,
-            damp_param=self.damp_param,
-            verbose=self.verbose,
-        )
-
         validate_fit_args(
             seeds=seeds,
             volumes=None,
@@ -187,8 +241,10 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         )
 
         omega, lens = build_domain(domain=domain, periodic=periodic)
+
         num_grains, space_dim = seeds.shape
-        self.space_dim_ = space_dim
+        self._space_dim = space_dim
+
         weights = np.zeros(num_grains)
         pd = PowerDiagram(positions=seeds, weights=weights, domain=omega)
 
@@ -196,109 +252,19 @@ class VoronoiDiagramGenerator(DiagramGenerator):
             add_replicants(obj=pd, periodic=periodic, domain_lens=lens)
 
         if self.n_iter == 0:
-            self._update_pd(pd)
+            self._set_pd(pd)
             return self
 
         for k in range(self.n_iter):
             seeds = (1 - self.damp_param) * seeds + self.damp_param * pd.centroids()
             pd.set_positions(seeds)
 
-            self._update_pd(pd)
+            self._set_pd(pd)
             self._print_msg(
                 f"iteration: {k + 1}/{self.n_iter}, norm of change in positions: {np.linalg.norm(pd.centroids() - seeds)}",
             )
 
         return self
-
-    def get_fitted_volumes(self) -> np.ndarray:
-        """
-        Get the computed Voronoi cell volumes.
-        """
-        self._ensure_fitted()
-
-        return self.pd_.integrals()
-
-    def get_mesh(self) -> pv.PolyData | pv.UnstructuredGrid:
-        """
-        Get the underlying Voronoi mesh as a pyvista PolyData or UnstructuredGrid data object.
-        """
-
-        self._ensure_fitted()
-
-        return self._get_mesh(self.pd_)
-
-    def get_positions(self) -> np.ndarray:
-        """
-        Get the final positions of seeds.
-        """
-
-        self._ensure_fitted()
-
-        return self.pd_.get_positions()
-
-    def get_centroids(self) -> np.ndarray:
-        """
-        Get the centroids of the cells in the Voronoi diagram.
-        """
-
-        self._ensure_fitted()
-
-        return self.pd_.centroids()
-
-    def get_vertices(self) -> dict[int, list]:
-        """
-        Get the vertices of the cells in the Voronoi diagram.
-
-        Return
-        ------
-        A dictionary with keys as cell ids and values as the
-        corresponding vertices.
-
-        In 2D, the format looks like this:
-
-        {
-            0: [v_1, v_2, ...],
-            ...
-            n-1: [v_1, v_2, ...],
-
-        }
-        where n is the number of cells or grains.
-
-        In 3D, the format looks like this:
-
-        {
-            0: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
-            ...
-            n-1: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
-
-        }
-        where n is the number of cells or grains. Note that the inner
-        list of vertices for each cell corresponds to the face vertices.
-        """
-
-        self._ensure_fitted()
-
-        return self._get_vertices(pd=self.pd_, space_dim=self.space_dim_)
-
-    def get_weights(self) -> np.ndarray:
-        """
-        Get the weights of the Voronoi diagram.
-        """
-
-        self._ensure_fitted()
-
-        return self.pd_.get_weights()
-
-    def diagram_to_vtk(self, filename: str | Path) -> None:
-        """
-        Write the generated diagram to .vkt file; filename must ends with .vtk.
-        """
-
-        self._ensure_fitted()
-
-        self.pd_.display_vtk(filename=filename, points=False, centroids=False)
-
-        return None
 
     def get_params(self) -> dict[str, Any]:
         """
@@ -334,35 +300,34 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         damp_param: float = 1.0,
         verbose: bool = True,
     ):
+        validate_generator_params(
+            tol=tol,
+            n_iter=n_iter,
+            damp_param=damp_param,
+            verbose=verbose,
+        )
+
         super().__init__(verbose)
 
         self.tol = tol
         self.n_iter = n_iter
         self.damp_param = damp_param
 
-        self.space_dim_: int | None = None
         self.optimal_transport_: OptimalTransport | None = None
         self.max_percentage_error_: float | None = None
         self.mean_percentage_error_: float | None = None
 
-    def _update_optimal_transport(self, optimal_transport: OptimalTransport) -> None:
+    def _set_optimal_transport(self, optimal_transport: OptimalTransport) -> None:
         self.optimal_transport_ = optimal_transport
 
-    def _update_errors(self, y: np.ndarray) -> None:
+        return None
+
+    def _set_errors(self, y: np.ndarray) -> None:
         percentage_errors = np.array(
             100.0 * np.abs(self.optimal_transport_.pd.integrals() - y) / y
         )
         self.max_percentage_error_ = percentage_errors.max()
         self.mean_percentage_error_ = percentage_errors.mean()
-
-    def _ensure_fitted(self) -> NotFittedError | None:
-        if self.optimal_transport_ is None:
-            raise NotFittedError(
-                f"This {self.__class__.__name__} instance is not fitted yet. "
-                f"Call 'fit' with appropriate arguments before using this estimator."
-            )
-
-        return None
 
     def fit(
         self,
@@ -404,13 +369,6 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         synthetmic.generate.LeguerreDiagramGenerator
         """
 
-        validate_generator_params(
-            tol=self.tol,
-            n_iter=self.n_iter,
-            damp_param=self.damp_param,
-            verbose=self.verbose,
-        )
-
         validate_fit_args(
             seeds=seeds,
             volumes=volumes,
@@ -419,7 +377,7 @@ class LaguerreDiagramGenerator(DiagramGenerator):
             init_weights=init_weights,
         )
 
-        self.space_dim_ = domain.shape[0]
+        self._space_dim = domain.shape[0]
 
         # Turn the relative percentage error into an absolute error tolerance
         # by using the smallest volume
@@ -447,8 +405,9 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         if self.n_iter == 0:
             optimal_transport.adjust_weights()
 
-            self._update_optimal_transport(optimal_transport=optimal_transport)
-            self._update_errors(y=volumes)
+            self._set_optimal_transport(optimal_transport=optimal_transport)
+            self._set_pd(optimal_transport.pd)
+            self._set_errors(y=volumes)
 
             return self
 
@@ -468,12 +427,12 @@ class LaguerreDiagramGenerator(DiagramGenerator):
             if np.min(m) > MIN_VOL_TOL:
                 optimal_transport.adjust_weights()
             else:
-                self._print_msg("Resetting weights to init_weights")
                 optimal_transport.set_weights(init_weights)
                 optimal_transport.adjust_weights()
 
-            self._update_optimal_transport(optimal_transport)
-            self._update_errors(volumes)
+            self._set_optimal_transport(optimal_transport)
+            self._set_pd(optimal_transport.pd)
+            self._set_errors(volumes)
 
             self._print_msg(
                 f"iteration: {k + 1}/{self.n_iter}, max_percentage_error: {self.max_percentage_error_:.4f}%, "
@@ -481,100 +440,6 @@ class LaguerreDiagramGenerator(DiagramGenerator):
             )
 
         return self
-
-    def get_fitted_volumes(self) -> np.ndarray:
-        """
-        Get the fitted volumes after fitting generator.
-        """
-        self._ensure_fitted()
-
-        return self.optimal_transport_.pd.integrals()
-
-    def get_mesh(self) -> pv.PolyData | pv.UnstructuredGrid:
-        """
-        Get the underlying mesh as a pyvista PolyData or UnstructuredGrid data object.
-        """
-
-        self._ensure_fitted()
-
-        return self._get_mesh(self.optimal_transport_.pd)
-
-    def get_positions(self) -> np.ndarray:
-        """
-        Get the final positions of initial seeds used for generating the laguerre diagram.
-        """
-
-        self._ensure_fitted()
-
-        return self.optimal_transport_.pd.get_positions()
-
-    def get_centroids(self) -> np.ndarray:
-        """
-        Get the centroids of the cells in the laguerre diagram.
-        """
-
-        self._ensure_fitted()
-
-        return self.optimal_transport_.pd.centroids()
-
-    def get_vertices(self) -> dict[int, list]:
-        """
-        Get the vertices of the cells in the laguerre diagram.
-
-        Return
-        ------
-        A dictionary with keys as cell ids and values as the
-        corresponding vertices.
-
-        In 2D, the format looks like this:
-
-        {
-            0: [v_1, v_2, ...],
-            ...
-            n-1: [v_1, v_2, ...],
-
-        }
-        where n is the number of cells or grains.
-
-        In 3D, the format looks like this:
-
-        {
-            0: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
-            ...
-            n-1: [[v_1, v_2, ...], [v_1, v_2, ...], ...],
-
-        }
-        where n is the number of cells or grains. Note that the inner
-        list of vertices for each cell corresponds to the face vertices.
-        """
-
-        self._ensure_fitted()
-
-        return self._get_vertices(
-            pd=self.optimal_transport_.pd, space_dim=self.space_dim_
-        )
-
-    def get_weights(self) -> np.ndarray:
-        """
-        Get the weights of the laguerre diagram.
-        """
-
-        self._ensure_fitted()
-
-        return self.optimal_transport_.pd.get_weights()
-
-    def diagram_to_vtk(self, filename: str | Path) -> None:
-        """
-        Write the generated diagram to .vkt file; filename must ends with .vtk.
-        """
-
-        self._ensure_fitted()
-
-        self.optimal_transport_.pd.display_vtk(
-            filename=filename, points=False, centroids=False
-        )
-
-        return None
 
     def get_params(self) -> dict[str, Any]:
         """

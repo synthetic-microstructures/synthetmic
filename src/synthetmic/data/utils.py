@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SynthetMicData:
     seeds: np.ndarray
     volumes: np.ndarray | None
