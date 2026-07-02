@@ -36,9 +36,7 @@ def recreate_figure6(save_path: str, is_periodic: bool) -> None:
                 n_grains=n_grains, r=r, is_periodic=is_periodic
             )
 
-            ldg = LaguerreDiagramGenerator(
-                tol=TOL, n_iter=N_ITER, damp_param=1.0, verbose=False
-            )
+            ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER, damp_param=1.0)
             start = time.time()
             ldg.fit(**asdict(data))
             end = time.time()
@@ -98,9 +96,7 @@ def damp_param_effect(is_periodic: bool, save_path: str) -> None:
         max_percentage_errors = np.zeros_like(damp_params)
 
         for j, dp in enumerate(damp_params):
-            ldg = LaguerreDiagramGenerator(
-                tol=TOL, n_iter=N_ITER, damp_param=dp, verbose=False
-            )
+            ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER, damp_param=dp)
             ldg.fit(**asdict(data))
 
             print(

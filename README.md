@@ -26,7 +26,7 @@ generator = LaguerreDiagramGenerator(
                 tol=0.1,
                 n_iter=5,
                 damp_param=1.0,
-                verbose=True,
+                
 )
 ```
 

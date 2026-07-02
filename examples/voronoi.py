@@ -14,11 +14,7 @@ def voronoi_with_random_seeds(
     domain, _ = toy.create_unit_domain(space_dim)
     seeds = toy.sample_random_seeds(domain=domain, n_grains=n_grains)
 
-    vdg = VoronoiDiagramGenerator(
-        n_iter=n_iter,
-        damp_param=1.0,
-        verbose=True,
-    )
+    vdg = VoronoiDiagramGenerator(n_iter=n_iter, damp_param=1.0)
     vdg.fit(
         seeds=seeds,
         domain=domain,

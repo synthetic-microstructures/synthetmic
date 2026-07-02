@@ -39,7 +39,7 @@ def test_mesh_diagram_with_periodic_domain() -> None:
     volumes = create_constant_volumes(n_grains=N_GRAINS, domain_volume=vol)
     periodic = create_periodicity(space_dim=SPACE_DIM, is_periodic=IS_PERIODIC)
 
-    g = LaguerreDiagramGenerator(verbose=False)
+    g = LaguerreDiagramGenerator()
     g.fit(seeds=seeds, volumes=volumes, domain=domain, periodic=periodic)
 
     expected = np.array([2, 3, 0, 3, 2, 1], dtype=np.int32)
@@ -58,7 +58,7 @@ def test_mesh_diagram_with_periodic_domain() -> None:
 
 def test_mesh_diagram_against_bruteforce() -> None:
     data = create_data_with_lognormal_volumes(is_periodic=True, random_state=40)
-    g = LaguerreDiagramGenerator(verbose=False)
+    g = LaguerreDiagramGenerator()
     g.fit(**asdict(data))
 
     points = sample_random_seeds(domain=data.domain, n_grains=100, random_state=40)

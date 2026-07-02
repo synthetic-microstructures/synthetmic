@@ -6,12 +6,11 @@ from synthetmic.generate import VoronoiDiagramGenerator
 
 
 @pytest.mark.parametrize(
-    "domain, seeds, expected_pos, expected_vols",
+    "domain, seeds, expected_vols",
     [
         (
             np.array([[0, 1]] * 2),
             toy.sample_random_seeds(domain=np.array([[0, 1]] * 2), n_grains=4),
-            np.array([[0.25, 0.25], [0.25, 0.75], [0.75, 0.25], [0.75, 0.75]]),
             np.array([[0.25] * 4]),
         ),
     ],
@@ -19,21 +18,11 @@ from synthetmic.generate import VoronoiDiagramGenerator
 def test_pos_and_vols(
     domain: np.ndarray,
     seeds: np.ndarray,
-    expected_pos: np.ndarray,
     expected_vols: np.ndarray,
 ) -> None:
-    vdg = VoronoiDiagramGenerator(
-        n_iter=50,
-        damp_param=1,
-        verbose=True,
-    )
-    vdg.fit(
-        seeds=seeds,
-        domain=domain,
-        periodic=None,
-    )
+    vdg = VoronoiDiagramGenerator(n_iter=50, damp_param=1)
+    vdg.fit(seeds=seeds, domain=domain, periodic=None)
 
-    print(vdg.get_positions())
     assert np.allclose(vdg.get_fitted_volumes(), expected_vols)
 
     return None
@@ -57,11 +46,7 @@ def test_periodic_args() -> None:
     results = []
 
     for periodic in periodic_list:
-        vdg = VoronoiDiagramGenerator(
-            n_iter=0,
-            damp_param=1.0,
-            verbose=False,
-        )
+        vdg = VoronoiDiagramGenerator(n_iter=0, damp_param=1.0)
         vdg.fit(seeds=seeds, domain=domain, periodic=periodic)
 
         counts = [len(k) for k in vdg.get_vertices().values()]

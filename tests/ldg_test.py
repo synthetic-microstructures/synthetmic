@@ -18,25 +18,25 @@ def const_vol_data() -> SynthetMicData:
 
 def test_generator_params(const_vol_data) -> None:
     with pytest.raises(ValueError):
-        ldg = LaguerreDiagramGenerator(damp_param=2.3, verbose=False)
+        ldg = LaguerreDiagramGenerator(damp_param=2.3)
         ldg.fit(**asdict(const_vol_data))
 
     with pytest.raises(ValueError):
-        ldg = LaguerreDiagramGenerator(tol=0.0, verbose=False)
+        ldg = LaguerreDiagramGenerator(tol=0.0)
         ldg.fit(**asdict(const_vol_data))
 
     with pytest.raises(ValueError):
-        ldg = LaguerreDiagramGenerator(n_iter=-12, verbose=False)
+        ldg = LaguerreDiagramGenerator(n_iter=-12)
         ldg.fit(**asdict(const_vol_data))
 
 
 def test_fit_args(const_vol_data) -> None:
     with pytest.raises(TypeError):
-        ldg = LaguerreDiagramGenerator(verbose=False)
+        ldg = LaguerreDiagramGenerator()
         ldg.fit(seeds=const_vol_data.seeds, volumes=1, domain=const_vol_data.domain)
 
     with pytest.raises(ValueError):
-        ldg = LaguerreDiagramGenerator(verbose=False)
+        ldg = LaguerreDiagramGenerator()
         ldg.fit(
             seeds=const_vol_data.seeds,
             volumes=np.zeros(50),
@@ -45,7 +45,7 @@ def test_fit_args(const_vol_data) -> None:
 
 
 def test_valid_attributes(const_vol_data) -> None:
-    ldg = LaguerreDiagramGenerator(tol=1, damp_param=1, verbose=False)
+    ldg = LaguerreDiagramGenerator(tol=1, damp_param=1)
     ldg.fit(**asdict(const_vol_data))
 
     assert isinstance(ldg.optimal_transport_, OptimalTransport) is True
@@ -54,7 +54,7 @@ def test_valid_attributes(const_vol_data) -> None:
 
 
 def test_output_dim(const_vol_data) -> None:
-    ldg = LaguerreDiagramGenerator(tol=1, damp_param=1, verbose=False)
+    ldg = LaguerreDiagramGenerator(tol=1, damp_param=1)
     ldg.fit(**asdict(const_vol_data))
 
     assert ldg.get_centroids().shape == const_vol_data.seeds.shape
@@ -125,7 +125,6 @@ def test_periodic_args() -> None:
             tol=1.0,
             n_iter=0,
             damp_param=1.0,
-            verbose=False,
         )
         generator.fit(seeds=seeds, volumes=volumes, domain=domain, periodic=periodic)
 

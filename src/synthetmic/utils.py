@@ -138,7 +138,6 @@ def validate_generator_params(
     tol: float | None,
     n_iter: int,
     damp_param: float,
-    verbose: bool,
 ) -> None:
     if tol is not None:
         vd.compose_rules(vd.is_instance(int, float), vd.gt(rhs=0.0))(tol, "tol")
@@ -147,7 +146,6 @@ def validate_generator_params(
     vd.compose_rules(vd.is_instance(int, float), vd.between(left=0.0, right=1.0))(
         damp_param, "damp_param"
     )
-    vd.is_instance(bool)(verbose, "verbose")
 
     return None
 

@@ -1,7 +1,8 @@
 import tempfile
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Callable, Self
 
 import numpy as np
 import pyvista as pv
@@ -16,12 +17,28 @@ from synthetmic.utils import (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class VoronoiEvent:
+    iteration: int
+    total: int
+    delta_pos_norm: float
+
+
+@dataclass(frozen=True, slots=True)
+class LaguerreEvent:
+    iteration: int
+    total: int
+    mean_percentage_error: float
+    max_percentage_error: float
+
+
+def _noop_callback(e: VoronoiEvent | LaguerreEvent) -> None:
+    pass
+
+
 class DiagramGenerator(ABC):
     _pd: PowerDiagram | None = None
     _space_dim: int | None
-
-    def __init__(self, verbose: bool) -> None:
-        self.verbose = verbose
 
     @abstractmethod
     def fit(self) -> Self:
@@ -154,18 +171,8 @@ class DiagramGenerator(ABC):
 
         self.pd_.display_vtk(filename=filename, points=False, centroids=False)
 
-        return None
-
     def _set_pd(self, pd: PowerDiagram) -> None:
         self._pd = pd
-
-        return None
-
-    def _print_msg(self, msg: str) -> None:
-        if self.verbose:
-            print(msg)
-
-        return None
 
     def _raise_not_fitted_error(self) -> None:
         raise NotFittedError(
@@ -183,24 +190,14 @@ class VoronoiDiagramGenerator(DiagramGenerator):
     damp_param : float [0, 1], optional
         The damping parametr of the damped Lloyd step; value must be between
         0 and 1 (inclusive at both ends).
-    verbose : bool, optional
-        If set to True, print optimisation progress.
     """
 
-    def __init__(
-        self,
-        n_iter: int = 5,
-        damp_param: float = 1.0,
-        verbose: bool = True,
-    ) -> None:
+    def __init__(self, n_iter: int = 5, damp_param: float = 1.0) -> None:
         validate_generator_params(
             tol=None,
             n_iter=n_iter,
             damp_param=damp_param,
-            verbose=verbose,
         )
-
-        super().__init__(verbose)
 
         self.n_iter = n_iter
         self.damp_param = damp_param
@@ -210,6 +207,7 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         seeds: np.ndarray,
         domain: np.ndarray,
         periodic: list[bool] | None = None,
+        callback: Callable[[VoronoiEvent], None] | None = None,
     ) -> Self:
         """
         Fit Voronoi diagram on the given seeds and domain specifications.
@@ -217,14 +215,17 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         Parameters
         ----------
 
-        seeds : ndarray, shape (N,d)
+        seeds: numpy.ndarray, shape (N,d)
             Locations of the N seeds.
-        domain : ndarray, shape (d,2)
+        domain: numpy.ndarray, shape (d,2)
             minimum and maximum coordinates of the box in each of the d dimensions
-            (d=2,3)
-        periodic : list, optional, length d
+            (d=2,3).
+        periodic: list[bool] or None, optional, length d
             List of Booleans indicating whether or not the domain is periodic in
             the different directions. None indicates no periodicity in any direction.
+        callback: callable or None, optional
+            Callback function that takes only synthetmic.generate.VoronoiEvent as argument. Use this
+            callable to access event data at run time.
 
         Returns
         -------
@@ -255,13 +256,20 @@ class VoronoiDiagramGenerator(DiagramGenerator):
             self._set_pd(pd)
             return self
 
+        if callback is None:
+            callback = _noop_callback
+
         for k in range(self.n_iter):
             seeds = (1 - self.damp_param) * seeds + self.damp_param * pd.centroids()
             pd.set_positions(seeds)
 
             self._set_pd(pd)
-            self._print_msg(
-                f"iteration: {k + 1}/{self.n_iter}, norm of change in positions: {np.linalg.norm(pd.centroids() - seeds)}",
+            callback(
+                VoronoiEvent(
+                    iteration=k + 1,
+                    total=self.n_iter,
+                    delta_pos_norm=np.linalg.norm(pd.centroids() - seeds),
+                )
             )
 
         return self
@@ -271,43 +279,28 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         Get the parameters of this instance as a dictionary.
         """
 
-        return dict(
-            n_iter=self.n_iter,
-            damp_param=self.damp_param,
-            verbose=self.verbose,
-        )
+        return dict(n_iter=self.n_iter, damp_param=self.damp_param)
 
 
 class LaguerreDiagramGenerator(DiagramGenerator):
     """
-    tol : float, optional
+    tol: float, optional
         Relative percentage error for volumes.
-    n_iter : int, optional
+    n_iter: int, optional
         Number of iterations of Lloyd's algorithm (move each seed to the
         centroid of its cell). If it is set to 0, then no Lloyd's iteration
         will be performed.
-    damp_param : float [0, 1], optional
+    damp_param: float [0, 1], optional
         The damping parametr of the damped Lloyd step; value must be between
         0 and 1 (inclusive at both ends).
-    verbose : bool, optional
-        If set to True, print optimisation progress.
     """
 
-    def __init__(
-        self,
-        tol: float = 1.0,
-        n_iter: int = 5,
-        damp_param: float = 1.0,
-        verbose: bool = True,
-    ):
+    def __init__(self, tol: float = 1.0, n_iter: int = 5, damp_param: float = 1.0):
         validate_generator_params(
             tol=tol,
             n_iter=n_iter,
             damp_param=damp_param,
-            verbose=verbose,
         )
-
-        super().__init__(verbose)
 
         self.tol = tol
         self.n_iter = n_iter
@@ -319,8 +312,6 @@ class LaguerreDiagramGenerator(DiagramGenerator):
 
     def _set_optimal_transport(self, optimal_transport: OptimalTransport) -> None:
         self.optimal_transport_ = optimal_transport
-
-        return None
 
     def _set_errors(self, y: np.ndarray) -> None:
         percentage_errors = np.array(
@@ -336,6 +327,7 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         domain: np.ndarray,
         periodic: list[bool] | None = None,
         init_weights: np.ndarray | None = None,
+        callback: Callable[[LaguerreEvent], None] | None = None,
     ) -> Self:
         """
         This function implements Algorithm 1 and 2 from the following paper:
@@ -349,19 +341,22 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         Parameters
         ----------
 
-        seeds : ndarray, shape (N,d)
+        seeds: numpy.ndarray, shape (N,d)
             Locations of the N seeds.
-        volumes : ndarray, shape (N,)
+        volumes: numpy.ndarray, shape (N,)
             Target volumes or areas of the N Laguerre cells.
-        domain : ndarray, shape (d,2)
+        domain: numpy.ndarray, shape (d,2)
             minimum and maximum coordinates of the box in each of the d dimensions
-            (d=2,3)
-        periodic : list, optional, length d
+            (d=2,3).
+        periodic: list[bool] or None, optional, length d
             List of Booleans indicating whether or not the domain is periodic in
             the different directions. None indicates no periodicity in any direction.
-        init_weights : ndarray, optional, shape (N,)
-            Initial guess for the weights for Algorithm 1.
-            None indicates that the weights should be zero.
+        init_weights: numpy.ndarray or None, optional, shape (N,)
+            Initial guess for the weights for Algorithm 1. None indicates that
+            the weights should be zero.
+        callback: callable or None, optional
+            Callback function that takes only synthetmic.generate.LaguerreEvent as argument.
+            Use this callable to access event data at run time.
 
         Returns
         -------
@@ -411,6 +406,9 @@ class LaguerreDiagramGenerator(DiagramGenerator):
 
             return self
 
+        if callback is None:
+            callback = _noop_callback
+
         MIN_VOL_TOL = 1e-10
         for k in range(self.n_iter):
             seeds = (
@@ -434,9 +432,13 @@ class LaguerreDiagramGenerator(DiagramGenerator):
             self._set_pd(optimal_transport.pd)
             self._set_errors(volumes)
 
-            self._print_msg(
-                f"iteration: {k + 1}/{self.n_iter}, max_percentage_error: {self.max_percentage_error_:.4f}%, "
-                f"mean_percentage_error: {self.mean_percentage_error_:.4f}%"
+            callback(
+                LaguerreEvent(
+                    iteration=k + 1,
+                    total=self.n_iter,
+                    max_percentage_error=self.max_percentage_error_,
+                    mean_percentage_error=self.mean_percentage_error_,
+                )
             )
 
         return self
@@ -446,9 +448,4 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         Get the parameters of this instance as a dictionary.
         """
 
-        return dict(
-            tol=self.tol,
-            n_iter=self.n_iter,
-            damp_param=self.damp_param,
-            verbose=self.verbose,
-        )
+        return dict(tol=self.tol, n_iter=self.n_iter, damp_param=self.damp_param)
