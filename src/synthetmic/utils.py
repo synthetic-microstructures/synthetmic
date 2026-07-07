@@ -6,9 +6,81 @@ from pysdot.domain_types import ConvexPolyhedraAssembly
 
 from synthetmic._internal import _data as dt
 from synthetmic._internal import _validate as vd
+from synthetmic._internal._deprecated import warn_deprecated
+from synthetmic.types import FloatSequence, IntSequence
 
 
-def mesh_diagram(
+def compute_cell_centers(
+    origin: FloatSequence, size: FloatSequence, points_per_dim: IntSequence
+) -> np.ndarray:
+    """
+    Compute the coordinates of uniformly spaced cell centers on a Cartesian grid.
+
+    The domain is defined by its physical ``origin`` and ``size``. Each dimension
+    is divided into the number of cells specified by ``points_per_dim``, and the
+    returned coordinates correspond to the center of every cell.
+
+    Parameters
+    ----------
+    origin : sequence of float, shape (N,)
+        Physical coordinates of the lower corner of the domain.
+    size : array_like of float, shape (N,)
+        Physical extent of the domain along each dimension.
+    points_per_dim : sequence of int, shape (N,)
+        Number of grid points along each dimension.
+
+    Returns
+    -------
+    centers : numpy.ndarray
+        Array of shape ``(*points_per_dim, N)`` containing the coordinates of
+        every cell center. The last axis stores the coordinate components, so
+        ``centers[i0, i1, ..., iN]`` gives the physical coordinates of the
+        corresponding cell center.
+
+    Notes
+    -----
+    The cell spacing in each dimension is
+
+    ``Δ = size / points_per_dim``
+
+    and the center coordinates are located at
+
+    ``origin + (k + 0.5) * Δ``
+
+    for ``k = 0, ..., points_per_dim - 1``.
+
+    Examples
+    --------
+    Create the centers of a 2D grid with four cells in x and three cells in y:
+
+    >>> centers = compute_cell_centers(
+    ...     origin=(0.0, 0.0),
+    ...     size=(4.0, 3.0),
+    ...     points_per_dim=(4, 3),
+    ... )
+    >>> centers.shape
+    (4, 3, 2)
+    >>> centers[0, 0]
+    array([0.5, 0.5])
+    >>> centers[-1, -1]
+    array([3.5, 2.5])
+    """
+    origin = np.asarray(origin, dtype=float)
+    size = np.asarray(size, dtype=float)
+    points_per_dim = np.asarray(points_per_dim, dtype=int)
+
+    delta = size / points_per_dim
+
+    axes = [
+        origin[dim] + (np.arange(points_per_dim[dim]) + 0.5) * delta[dim]
+        for dim in range(len(points_per_dim))
+    ]
+    mesh_grids = np.meshgrid(*axes, indexing="ij")
+
+    return np.stack(mesh_grids, axis=-1)
+
+
+def assign_points_to_grains(
     points: np.ndarray,
     pd: PowerDiagram,
     domain: np.ndarray | None = None,
@@ -20,21 +92,21 @@ def mesh_diagram(
 
     Parameters
     ----------
-    points : numpy.ndarray
+    points: numpy.ndarray
         Array of shape (n_points, dim) with 2D or 3D coordinates.
-    pd : pysdot.PowerDiagram
+    pd: pysdot.PowerDiagram
         Power diagram object.
-    n_jobs : int, default=-1
-        Number of parallel workers to use.
-    domain: numpy.ndarray or None, default=None
+    domain: numpy.ndarray or None, optional, default=None
         If not None, it represents the minimum and maximum coordinates of the box
-        in each of the d dimensions (d=2,3) and the underlying power diagram will
+        in each of the d dimensions (d = 2 or 3), and the underlying power diagram will
         be treated as periodic in all dimensions. The positions of the power diagram will be
         mapped to the domain.
+    n_jobs: int, optional, default=-1
+        Number of parallel workers to use.
 
     Returns
     -------
-    grain_indices : numpy.ndarray
+    grain_indices: numpy.ndarray
         Array of shape (len(points),) where grain_indices[i] is
         the index of the grain containing point i.
     """
@@ -80,6 +152,27 @@ def mesh_diagram(
         all_points=lifted_positions,
         workers=n_jobs,
         boxsize=boxsize,
+    )
+
+
+def mesh_diagram(
+    points: np.ndarray,
+    pd: PowerDiagram,
+    domain: np.ndarray | None = None,
+    n_jobs: int = -1,
+) -> np.ndarray:
+    """
+    Deprecated. Use `synthetmic.utils.assign_points_to_cells` instead.
+    """
+    warn_deprecated(
+        "`synthetmic.utils.mesh_diagram` is deprecated and will be removed in a future "
+        "release. Please use `synthetmic.utils.assign_points_to_grains` instead."
+    )
+    return assign_points_to_grains(
+        points=points,
+        pd=pd,
+        domain=domain,
+        n_jobs=n_jobs,
     )
 
 

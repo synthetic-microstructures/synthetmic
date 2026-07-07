@@ -8,7 +8,9 @@ import numpy as np
 import pyvista as pv
 from pysdot import OptimalTransport, PowerDiagram
 
+from synthetmic._internal._deprecated import warn_deprecated
 from synthetmic._internal._errors import NotFittedError
+from synthetmic.types import DEPRECATED, MissingType
 from synthetmic.utils import (
     add_replicants,
     build_domain,
@@ -37,8 +39,26 @@ def _noop_callback(e: VoronoiEvent | LaguerreEvent) -> None:
 
 
 class DiagramGenerator(ABC):
+    """
+    Base class for diagram generator.
+
+    Parameters
+    ----------
+
+    verbose: Deprecated, has no effect. Will be removed in the next release.
+    """
+
     _pd: PowerDiagram | None = None
     _space_dim: int | None
+
+    def __init__(self, verbose: bool | MissingType = DEPRECATED) -> None:
+        if not isinstance(verbose, MissingType):
+            warn_deprecated(
+                "The `verbose` argument is deprecated and has no effect. "
+                "It will be removed in a future release. Please pass a "
+                "callback to to the `fit` method."
+            )
+        self.verbose = verbose
 
     @abstractmethod
     def fit(self) -> Self:
@@ -192,13 +212,19 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         0 and 1 (inclusive at both ends).
     """
 
-    def __init__(self, n_iter: int = 5, damp_param: float = 1.0) -> None:
+    def __init__(
+        self,
+        n_iter: int = 5,
+        damp_param: float = 1.0,
+        verbose: bool | MissingType = DEPRECATED,
+    ) -> None:
         validate_generator_params(
             tol=None,
             n_iter=n_iter,
             damp_param=damp_param,
         )
 
+        super().__init__(verbose=verbose)
         self.n_iter = n_iter
         self.damp_param = damp_param
 
@@ -295,13 +321,20 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         0 and 1 (inclusive at both ends).
     """
 
-    def __init__(self, tol: float = 1.0, n_iter: int = 5, damp_param: float = 1.0):
+    def __init__(
+        self,
+        tol: float = 1.0,
+        n_iter: int = 5,
+        damp_param: float = 1.0,
+        verbose: bool | MissingType = DEPRECATED,
+    ):
         validate_generator_params(
             tol=tol,
             n_iter=n_iter,
             damp_param=damp_param,
         )
 
+        super().__init__(verbose=verbose)
         self.tol = tol
         self.n_iter = n_iter
         self.damp_param = damp_param
