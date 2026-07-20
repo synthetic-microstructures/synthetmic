@@ -2,8 +2,24 @@ from typing import Any, Callable, Type
 
 import numpy as np
 
+from synthetmic.typing import BoolSequence, FloatArray, NumericArray
 
-def check_points(points: np.ndarray) -> None:
+
+def validate_generator_config(
+    tol: float | None,
+    n_iter: int,
+    damp_param: float,
+) -> None:
+    if tol is not None:
+        compose_rules(is_instance(int, float), gt(rhs=0.0))(tol, "tol")
+
+    compose_rules(is_instance(int), gte(rhs=0))(n_iter, "n_iter")
+    compose_rules(is_instance(int, float), between(left=0.0, right=1.0))(
+        damp_param, "damp_param"
+    )
+
+
+def check_points(points: FloatArray) -> None:
     points = np.asarray(points)
 
     if points.ndim != 2:
@@ -21,43 +37,34 @@ def check_points(points: np.ndarray) -> None:
             f"Got {points.shape[1]}."
         )
 
-    return None
-
 
 def gt(rhs: float) -> Callable[[float | None, str], None]:
     def _out(x: float | None, name: str) -> None:
-        if x <= rhs or x is None:
+        if x is None or x <= rhs:
             raise ValueError(f"{name} must be greater than {rhs} but {x} is given.")
-
-        return None
 
     return _out
 
 
 def gte(rhs: float) -> Callable[[float | None, str], None]:
     def _out(x: float | None, name: str) -> None:
-        if x < rhs or x is None:
+        if x is None or x < rhs:
             raise ValueError(
                 f"{name} must be greater than or equal to {rhs} but {x} is given."
             )
-        return None
 
     return _out
 
 
-def is_instance(
-    *instance: tuple[Type, ...], allow_none: bool = False
-) -> Callable[[Any, str], None]:
+def is_instance(*args, allow_none: bool = False) -> Callable[[Any, str], None]:
     def _out(x: Any, name: str) -> None:
-        check = any(isinstance(x, i) for i in instance)
+        check = any(isinstance(x, i) for i in args)
         rule = check or (x is None) if allow_none else check
 
         if not rule:
             raise TypeError(
-                f"{name} must be of type {'or '.join(instance)} but {type(x)} is provided."
+                f"{name} must be of type {'or '.join(args)} but {type(x)} is provided."
             )
-
-        return None
 
     return _out
 
@@ -82,12 +89,10 @@ def between(
         return left <= x <= right
 
     def _out(x: float | None, name: str) -> None:
-        if (not _rule(x)) or x is None:
+        if x is None or (not _rule(x)):
             raise ValueError(
                 f"{name} must be between {left} and {right}, but {x} is given."
             )
-
-        return None
 
     return _out
 
@@ -106,8 +111,8 @@ def compose_rules(*args) -> Callable:
 
 def check_array(
     allowed_types: list[Type], allowed_shapes: list[tuple[int, int]] | None = None
-) -> Callable[[np.ndarray, str], None]:
-    def _out(x: np.ndarray, name: str) -> None:
+) -> Callable[[NumericArray, str], None]:
+    def _out(x: NumericArray, name: str) -> None:
         if x.size == 0:
             raise ValueError(f"{name} is empty. Input required a non-empty ndarray.")
 
@@ -122,12 +127,10 @@ def check_array(
                     f"{name} hase a wrong shape {x.shape}. Allowed shapes are {allowed_shapes}."
                 )
 
-        return None
-
     return _out
 
 
-def check_periodic(x: list[bool], name: str) -> None:
+def check_periodic(x: BoolSequence, name: str) -> None:
     if len(x) not in (2, 3):
         raise ValueError(
             f"invalid {name} length {len(x)}; expected length to be 2 or 3."
@@ -135,5 +138,3 @@ def check_periodic(x: list[bool], name: str) -> None:
 
     if not all(isinstance(var, bool) for var in x):
         raise ValueError(f"all entries in {name} must be bool.")
-
-    return None

@@ -1,20 +1,35 @@
 import numpy as np
 
 from synthetmic.data.utils import (
-    SynthetMicData,
+    DiagramConfig,
     create_constant_volumes,
     create_periodicity,
     sample_random_seeds,
 )
+from synthetmic.typing import FloatArray
 
 
-def create_unit_domain(space_dim: int) -> tuple[np.ndarray, float]:
+def create_unit_domain(space_dim: int) -> tuple[FloatArray, float]:
+    """
+    Create a unit domain or box in 2D or 3D.
+
+    Parameters
+    ----------
+    space_dim : int
+        Space dimension, 2 or 3.
+
+    Returns
+    -------
+    tuple[FloatArray, float]
+        Domain and its volume.
+
+    """
     match space_dim:
         case 2 | 3:
             return np.array([[0, 1]] * space_dim), 1.0
         case _:
             raise ValueError(
-                f"invalid space_dim: {space_dim}; value must be either 2 or 3."
+                f"Invalid space_dim: {space_dim}; value must be either 2 or 3."
             )
 
 
@@ -23,7 +38,7 @@ def create_data_with_constant_volumes(
     n_grains: int = 1000,
     is_periodic: bool = False,
     random_state: int | None = None,
-) -> SynthetMicData:
+) -> DiagramConfig:
     """
     Create data in a unit square or cube. All target volumes will be the same and seeds will be
     randomly generated in the domain.
@@ -44,7 +59,7 @@ def create_data_with_constant_volumes(
 
     Returns
     -------
-    synthetmic.data.utils.SyntyhetMicData
+    synthetmic.data.utils.DiagramConfig
     """
     domain, domain_volume = create_unit_domain(space_dim=space_dim)
 
@@ -54,12 +69,13 @@ def create_data_with_constant_volumes(
     volumes = create_constant_volumes(n_grains=n_grains, domain_volume=domain_volume)
     periodic = create_periodicity(space_dim=domain.shape[0], is_periodic=is_periodic)
 
-    return SynthetMicData(
+    return DiagramConfig(
         seeds=seeds,
         volumes=volumes,
+        phases=np.zeros(n_grains, dtype=np.integer),
         domain=domain,
         periodic=periodic,
-        init_weights=None,
+        initial_weights=None,
     )
 
 
@@ -70,7 +86,7 @@ def create_data_with_lognormal_volumes(
     n_grains: int = 1000,
     is_periodic: bool = False,
     random_state: int | None = None,
-) -> SynthetMicData:
+) -> DiagramConfig:
     """
     Create data in a unit square or cube. All target volumes will be distributed with
     lognormal distribution in the domain.
@@ -97,7 +113,7 @@ def create_data_with_lognormal_volumes(
 
     Returns
     -------
-    synthetmic.data.utils.SyntyhetMicData
+    synthetmic.data.utils.DiagramConfig
     """
     domain, domain_volume = create_unit_domain(space_dim=space_dim)
 
@@ -113,10 +129,11 @@ def create_data_with_lognormal_volumes(
 
     periodic = create_periodicity(space_dim=domain.shape[0], is_periodic=is_periodic)
 
-    return SynthetMicData(
+    return DiagramConfig(
         seeds=seeds,
         volumes=volumes,
+        phases=np.zeros((n_grains,), dtype=np.integer),
         domain=domain,
         periodic=periodic,
-        init_weights=None,
+        initial_weights=None,
     )

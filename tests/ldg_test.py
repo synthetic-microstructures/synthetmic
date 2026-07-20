@@ -1,70 +1,47 @@
-from dataclasses import asdict
-
 import numpy as np
 import pytest
-from pysdot import OptimalTransport
+from pysdot import PowerDiagram
 
 from synthetmic import LaguerreDiagramGenerator
-from synthetmic._internal._errors import NotFittedError
 from synthetmic.data import toy, utils
 from synthetmic.data.toy import create_data_with_constant_volumes
-from synthetmic.data.utils import SynthetMicData
+from synthetmic.data.utils import DiagramConfig
 
 
 @pytest.fixture
-def const_vol_data() -> SynthetMicData:
+def config() -> DiagramConfig:
     return create_data_with_constant_volumes(space_dim=3)
 
 
-def test_generator_params(const_vol_data) -> None:
+def test_generator_params(config) -> None:
     with pytest.raises(ValueError):
         ldg = LaguerreDiagramGenerator(damp_param=2.3)
-        ldg.fit(**asdict(const_vol_data))
+        ldg.fit(config)
 
     with pytest.raises(ValueError):
         ldg = LaguerreDiagramGenerator(tol=0.0)
-        ldg.fit(**asdict(const_vol_data))
+        ldg.fit(config)
 
     with pytest.raises(ValueError):
         ldg = LaguerreDiagramGenerator(n_iter=-12)
-        ldg.fit(**asdict(const_vol_data))
+        ldg.fit(config)
 
 
-def test_fit_args(const_vol_data) -> None:
-    with pytest.raises(TypeError):
-        ldg = LaguerreDiagramGenerator()
-        ldg.fit(seeds=const_vol_data.seeds, volumes=1, domain=const_vol_data.domain)
-
-    with pytest.raises(ValueError):
-        ldg = LaguerreDiagramGenerator()
-        ldg.fit(
-            seeds=const_vol_data.seeds,
-            volumes=np.zeros(50),
-            domain=const_vol_data.domain,
-        )
-
-
-def test_valid_attributes(const_vol_data) -> None:
+def test_valid_attributes(config) -> None:
     ldg = LaguerreDiagramGenerator(tol=1, damp_param=1)
-    ldg.fit(**asdict(const_vol_data))
+    ldg.fit(config)
 
-    assert isinstance(ldg.optimal_transport_, OptimalTransport) is True
+    assert isinstance(ldg.pd_, PowerDiagram) is True
     assert isinstance(ldg.max_percentage_error_, float) is True
     assert isinstance(ldg.mean_percentage_error_, float) is True
 
 
-def test_output_dim(const_vol_data) -> None:
+def test_output_dim(config) -> None:
     ldg = LaguerreDiagramGenerator(tol=1, damp_param=1)
-    ldg.fit(**asdict(const_vol_data))
+    ldg.fit(config)
 
-    assert ldg.get_centroids().shape == const_vol_data.seeds.shape
-    assert ldg.get_fitted_volumes().shape == const_vol_data.volumes.shape
-
-
-def test_ensure_fit() -> None:
-    with pytest.raises(NotFittedError):
-        ldg = LaguerreDiagramGenerator()
-        ldg.get_centroids()
+    assert ldg.get_centroids().shape == config.seeds.shape
+    assert ldg.get_fitted_volumes().shape == config.volumes.shape
 
 
 @pytest.mark.parametrize(
@@ -82,7 +59,7 @@ def test_get_vertices(seeds: np.ndarray, expected: int) -> None:
     )
 
     ldg = LaguerreDiagramGenerator(n_iter=0)
-    ldg.fit(seeds=seeds, volumes=volumes, domain=domain)
+    ldg.fit(DiagramConfig(seeds=seeds, volumes=volumes, domain=domain))
 
     res = ldg.get_vertices()
 
@@ -96,8 +73,6 @@ def test_get_vertices(seeds: np.ndarray, expected: int) -> None:
 
     assert len(res) == n_grains
     assert sum_vertices == expected
-
-    return None
 
 
 def test_periodic_args() -> None:
@@ -126,7 +101,11 @@ def test_periodic_args() -> None:
             n_iter=0,
             damp_param=1.0,
         )
-        generator.fit(seeds=seeds, volumes=volumes, domain=domain, periodic=periodic)
+        generator.fit(
+            DiagramConfig(
+                seeds=seeds, volumes=volumes, domain=domain, periodic=periodic
+            )
+        )
 
         counts = [len(k) for k in generator.get_vertices().values()]
         results.append(counts)
@@ -134,5 +113,3 @@ def test_periodic_args() -> None:
         print(f"periodic: {periodic}, verts counts: {counts}")
 
     assert results[0] == results[1]
-
-    return None

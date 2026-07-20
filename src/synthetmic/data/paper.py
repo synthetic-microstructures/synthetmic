@@ -2,8 +2,8 @@ import math
 
 import numpy as np
 
-from synthetmic._internal._consts import Gradient, Initializer
-from synthetmic._internal._data import (
+from synthetmic._consts import Gradient, Initializer
+from synthetmic._data import (
     calulate_rel_vols,
     create_banded_points,
     create_layered_points,
@@ -12,13 +12,13 @@ from synthetmic._internal._data import (
     sample_points_outside_discs,
 )
 from synthetmic.data.utils import (
-    SynthetMicData,
+    DiagramConfig,
     create_periodicity,
     sample_random_seeds,
 )
 
 
-def create_example3_data(is_periodic: bool) -> SynthetMicData:
+def create_example3_data(is_periodic: bool) -> DiagramConfig:
     """
     Create data for generating figures 1 and 2 of the following paper:
 
@@ -36,7 +36,7 @@ def create_example3_data(is_periodic: bool) -> SynthetMicData:
 
     Returns
     -------
-    synthetmic.data.utils.SynthetMicData
+    synthetmic.data.utils.DiagramConfig
     """
 
     domain = np.array([[0, 1], [0, 1]])
@@ -52,12 +52,12 @@ def create_example3_data(is_periodic: bool) -> SynthetMicData:
 
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
-    return SynthetMicData(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
+    return DiagramConfig(
+        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
     )
 
 
-def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
+def create_example4_data(initializer: str, is_periodic: bool) -> DiagramConfig:
     """
     Create data for generating figure 4 of the following paper:
 
@@ -79,7 +79,7 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
 
     Returns
     -------
-    synthetmic.data.utils.SynthetMicData
+    synthetmic.data.utils.DiagramConfig
     """
 
     AREA_FRAC = 1 / 800
@@ -171,12 +171,12 @@ def create_example4_data(initializer: str, is_periodic: bool) -> SynthetMicData:
 
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
-    return SynthetMicData(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
+    return DiagramConfig(
+        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
     )
 
 
-def create_example4b_data(gradient: str, is_periodic: bool) -> SynthetMicData:
+def create_example4b_data(gradient: str, is_periodic: bool) -> DiagramConfig:
     """
     Create data for generating figure 5 of the following paper:
 
@@ -198,7 +198,7 @@ def create_example4b_data(gradient: str, is_periodic: bool) -> SynthetMicData:
 
     Returns
     -------
-    synthetmic.data.utils.SynthetMicData
+    synthetmic.data.utils.DiagramConfig
     """
 
     if gradient not in Gradient:
@@ -226,20 +226,20 @@ def create_example4b_data(gradient: str, is_periodic: bool) -> SynthetMicData:
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
     if gradient == Gradient.INCREASING:
-        return SynthetMicData(
-            seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
+        return DiagramConfig(
+            seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
         )
 
     y = np.concatenate(
         (y[len(y) % 2 :: 2], y[::-2])
     )  # ensure the large areas fall in the middle and small areas fall at the ends
 
-    return SynthetMicData(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
+    return DiagramConfig(
+        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
     )
 
 
-def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> SynthetMicData:
+def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> DiagramConfig:
     """
     Create data for generating figure 6 of the following paper:
 
@@ -265,7 +265,7 @@ def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> SynthetM
 
     Returns
     -------
-    synthetmic.data.utils.SynthetMicData
+    synthetmic.data.utils.DiagramConfig
     """
 
     L1, L2, L3 = 100, 100, 100
@@ -278,16 +278,16 @@ def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> SynthetM
     X = sample_random_seeds(domain, n_grains)
     target_vols = domain_vol * calulate_rel_vols(n_grains // 2, n_grains // 2, r)
 
-    return SynthetMicData(
+    return DiagramConfig(
         seeds=X,
         volumes=target_vols,
         domain=domain,
         periodic=periodic,
-        init_weights=None,
+        initial_weights=None,
     )
 
 
-def create_example5p4_data(is_periodic: bool) -> SynthetMicData:
+def create_example5p4_data(is_periodic: bool) -> DiagramConfig:
     """
     Create data for generating figure 12 of the following paper:
 
@@ -305,7 +305,7 @@ def create_example5p4_data(is_periodic: bool) -> SynthetMicData:
 
     Returns
     -------
-    synthetmic.data.utils.SynthetMicData
+    synthetmic.data.utils.DiagramConfig
     """
 
     L1 = 2
@@ -326,12 +326,12 @@ def create_example5p4_data(is_periodic: bool) -> SynthetMicData:
     X = X @ np.diag([L1, L2, L3])
     y = rel_vols * domain_vol
 
-    return SynthetMicData(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, init_weights=None
+    return DiagramConfig(
+        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
     )
 
 
-def create_example5p5_data(is_periodic: bool) -> SynthetMicData:
+def create_example5p5_data(is_periodic: bool) -> DiagramConfig:
     """
     Create data for generating figure 13 of the following paper:
 
@@ -349,7 +349,7 @@ def create_example5p5_data(is_periodic: bool) -> SynthetMicData:
 
     Returns
     -------
-    synthetmic.data.utils.SynthetMicData
+    synthetmic.data.utils.DiagramConfig
     """
 
     L1 = 2
@@ -381,10 +381,10 @@ def create_example5p5_data(is_periodic: bool) -> SynthetMicData:
 
     target_vols = rel_vols * domain_vol
 
-    return SynthetMicData(
+    return DiagramConfig(
         seeds=X,
         volumes=target_vols,
         domain=domain,
         periodic=periodic,
-        init_weights=None,
+        initial_weights=None,
     )

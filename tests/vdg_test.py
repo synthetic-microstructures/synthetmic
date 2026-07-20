@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
+from synthetmic import DiagramConfig, VoronoiDiagramGenerator
 from synthetmic.data import toy
-from synthetmic.generate import VoronoiDiagramGenerator
 
 
 @pytest.mark.parametrize(
@@ -21,11 +21,9 @@ def test_pos_and_vols(
     expected_vols: np.ndarray,
 ) -> None:
     vdg = VoronoiDiagramGenerator(n_iter=50, damp_param=1)
-    vdg.fit(seeds=seeds, domain=domain, periodic=None)
+    vdg.fit(DiagramConfig(seeds=seeds, domain=domain, periodic=None))
 
     assert np.allclose(vdg.get_fitted_volumes(), expected_vols)
-
-    return None
 
 
 def test_periodic_args() -> None:
@@ -47,11 +45,9 @@ def test_periodic_args() -> None:
 
     for periodic in periodic_list:
         vdg = VoronoiDiagramGenerator(n_iter=0, damp_param=1.0)
-        vdg.fit(seeds=seeds, domain=domain, periodic=periodic)
+        vdg.fit(DiagramConfig(seeds=seeds, domain=domain, periodic=periodic))
 
         counts = [len(k) for k in vdg.get_vertices().values()]
         results.append(counts)
 
     assert results[0] == results[1]
-
-    return None
