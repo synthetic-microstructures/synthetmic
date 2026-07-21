@@ -190,7 +190,7 @@ class DiagramGenerator(ABC):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             filename = Path(tmpdir) / "diagram.vtk"
-            self.pd_.display_vtk(filename)
+            self.pd_.display_vtk(str(filename), points=None, centroids=None)
 
             return pv.read(filename)
 
@@ -359,17 +359,18 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         if config.periodic is not None:
             add_replicants(obj=pd, periodic=config.periodic, boxsize=boxsize)
 
-        delta_pos_norm = np.linalg.norm(pd.centroids() - pd.get_positions())
+        positions = pd.get_positions()
+        centroids = pd.centroids()
+        delta_pos_norm = np.linalg.norm(centroids - positions)
 
         if self.n_iter > 0:
-            positions = config.seeds.copy()
             for k in range(self.n_iter):
-                centroids = pd.centroids()
                 positions = (
                     1 - self.damp_param
                 ) * positions + self.damp_param * centroids
 
                 pd.set_positions(positions)
+                centroids = pd.centroids()
                 delta_pos_norm = np.linalg.norm(centroids - positions)
 
                 callback(

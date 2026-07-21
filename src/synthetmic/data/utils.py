@@ -177,10 +177,11 @@ class DiagramConfig:
             vd.check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
         )(domain, "domain")
 
-        vd.compose_rules(
-            vd.is_instance(np.ndarray, allow_none=True),
-            vd.check_array(allowed_types=[float, int], allowed_ndims=[1]),
-        )(volumes, "volumes")
+        vd.is_instance(np.ndarray, allow_none=True)(volumes, "volumes")
+        if volumes is not None:
+            vd.check_array(allowed_types=[float, int], allowed_ndims=[1])(
+                volumes, "volumes"
+            )
 
         if periodic is None:
             periodic = create_periodicity(space_dim=space_dim, is_periodic=False)
