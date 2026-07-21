@@ -179,7 +179,7 @@ def mesh_diagram(
 
 
 def build_domain(
-    domain: FloatArray, periodic: BoolSequence | None
+    domain: FloatArray, periodic: BoolSequence
 ) -> tuple[ConvexPolyhedraAssembly, FloatSequence]:
     """
     Build a ConvexPolyhedraAssemply domain instance.
@@ -189,9 +189,9 @@ def build_domain(
     domain : FloatArray
         Represents the minimum and maximum coordinates of the box
         in each of the d dimensions (d = 2 or 3).
-    periodic : BoolSequence or None
+    periodic : BoolSequence
         Sequence of bool indicating whether or not the domain is periodic in
-        each d dimensions. None indicates no periodicity in any direction.
+        each d dimensions.
 
     Returns
     -------
@@ -205,11 +205,10 @@ def build_domain(
     maxs = domain[:, 1].copy()
     boxsize = domain[:, 1] - domain[:, 0]
 
-    if periodic is not None:
-        for k, p in enumerate(periodic):
-            if p:
-                mins[k] = mins[k] - boxsize[k]
-                maxs[k] = maxs[k] + boxsize[k]
+    for k, p in enumerate(periodic):
+        if p:
+            mins[k] = mins[k] - boxsize[k]
+            maxs[k] = maxs[k] + boxsize[k]
 
     omega.add_box(mins, maxs)
 

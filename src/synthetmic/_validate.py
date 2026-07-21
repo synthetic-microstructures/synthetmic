@@ -110,7 +110,9 @@ def compose_rules(*args) -> Callable:
 
 
 def check_array(
-    allowed_types: list[Type], allowed_shapes: list[tuple[int, int]] | None = None
+    allowed_types: list[Type],
+    allowed_shapes: list[tuple[int, int]] | None = None,
+    allowed_ndims: list[int] | None = None,
 ) -> Callable[[NumericArray, str], None]:
     def _out(x: NumericArray, name: str) -> None:
         if x.size == 0:
@@ -127,14 +129,23 @@ def check_array(
                     f"{name} hase a wrong shape {x.shape}. Allowed shapes are {allowed_shapes}."
                 )
 
+        if allowed_ndims is not None:
+            if x.ndim not in allowed_ndims:
+                raise ValueError(
+                    f"{name} hase a wrong ndim {x.ndim}. Allowed ndims are {allowed_ndims}."
+                )
+
     return _out
 
 
-def check_periodic(x: BoolSequence, name: str) -> None:
-    if len(x) not in (2, 3):
-        raise ValueError(
-            f"invalid {name} length {len(x)}; expected length to be 2 or 3."
-        )
+def check_periodic() -> Callable[[BoolSequence, str], None]:
+    def _out(x: BoolSequence, name: str) -> None:
+        if len(x) not in (2, 3):
+            raise ValueError(
+                f"invalid {name} length {len(x)}; expected length to be 2 or 3."
+            )
 
-    if not all(isinstance(var, bool) for var in x):
-        raise ValueError(f"all entries in {name} must be bool.")
+        if not all(isinstance(var, bool) for var in x):
+            raise ValueError(f"all entries in {name} must be bool.")
+
+    return _out

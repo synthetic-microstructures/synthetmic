@@ -59,7 +59,7 @@ def create_data_with_constant_volumes(
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
     domain, domain_volume = create_unit_domain(space_dim=space_dim)
 
@@ -69,14 +69,7 @@ def create_data_with_constant_volumes(
     volumes = create_constant_volumes(n_grains=n_grains, domain_volume=domain_volume)
     periodic = create_periodicity(space_dim=domain.shape[0], is_periodic=is_periodic)
 
-    return DiagramConfig(
-        seeds=seeds,
-        volumes=volumes,
-        phases=np.zeros(n_grains, dtype=np.integer),
-        domain=domain,
-        periodic=periodic,
-        initial_weights=None,
-    )
+    return DiagramConfig(seeds=seeds, volumes=volumes, domain=domain, periodic=periodic)
 
 
 def create_data_with_lognormal_volumes(
@@ -113,7 +106,7 @@ def create_data_with_lognormal_volumes(
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
     domain, domain_volume = create_unit_domain(space_dim=space_dim)
 
@@ -129,11 +122,4 @@ def create_data_with_lognormal_volumes(
 
     periodic = create_periodicity(space_dim=domain.shape[0], is_periodic=is_periodic)
 
-    return DiagramConfig(
-        seeds=seeds,
-        volumes=volumes,
-        phases=np.zeros((n_grains,), dtype=np.integer),
-        domain=domain,
-        periodic=periodic,
-        initial_weights=None,
-    )
+    return DiagramConfig(seeds=seeds, volumes=volumes, domain=domain, periodic=periodic)

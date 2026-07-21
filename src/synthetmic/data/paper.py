@@ -36,7 +36,7 @@ def create_example3_data(is_periodic: bool) -> DiagramConfig:
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
 
     domain = np.array([[0, 1], [0, 1]])
@@ -52,9 +52,7 @@ def create_example3_data(is_periodic: bool) -> DiagramConfig:
 
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
-    return DiagramConfig(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
-    )
+    return DiagramConfig(seeds=X, volumes=y, domain=domain, periodic=periodic)
 
 
 def create_example4_data(initializer: str, is_periodic: bool) -> DiagramConfig:
@@ -79,7 +77,7 @@ def create_example4_data(initializer: str, is_periodic: bool) -> DiagramConfig:
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
 
     AREA_FRAC = 1 / 800
@@ -171,9 +169,7 @@ def create_example4_data(initializer: str, is_periodic: bool) -> DiagramConfig:
 
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
-    return DiagramConfig(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
-    )
+    return DiagramConfig(seeds=X, volumes=y, domain=domain, periodic=periodic)
 
 
 def create_example4b_data(gradient: str, is_periodic: bool) -> DiagramConfig:
@@ -198,7 +194,7 @@ def create_example4b_data(gradient: str, is_periodic: bool) -> DiagramConfig:
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
 
     if gradient not in Gradient:
@@ -226,17 +222,13 @@ def create_example4b_data(gradient: str, is_periodic: bool) -> DiagramConfig:
     periodic = create_periodicity(domain.shape[0], is_periodic)
 
     if gradient == Gradient.INCREASING:
-        return DiagramConfig(
-            seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
-        )
+        return DiagramConfig(seeds=X, volumes=y, domain=domain, periodic=periodic)
 
     y = np.concatenate(
         (y[len(y) % 2 :: 2], y[::-2])
     )  # ensure the large areas fall in the middle and small areas fall at the ends
 
-    return DiagramConfig(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
-    )
+    return DiagramConfig(seeds=X, volumes=y, domain=domain, periodic=periodic)
 
 
 def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> DiagramConfig:
@@ -265,7 +257,7 @@ def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> DiagramC
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
 
     L1, L2, L3 = 100, 100, 100
@@ -283,7 +275,6 @@ def create_example5p1_data(n_grains: int, r: int, is_periodic: bool) -> DiagramC
         volumes=target_vols,
         domain=domain,
         periodic=periodic,
-        initial_weights=None,
     )
 
 
@@ -305,7 +296,7 @@ def create_example5p4_data(is_periodic: bool) -> DiagramConfig:
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
 
     L1 = 2
@@ -326,9 +317,7 @@ def create_example5p4_data(is_periodic: bool) -> DiagramConfig:
     X = X @ np.diag([L1, L2, L3])
     y = rel_vols * domain_vol
 
-    return DiagramConfig(
-        seeds=X, volumes=y, domain=domain, periodic=periodic, initial_weights=None
-    )
+    return DiagramConfig(seeds=X, volumes=y, domain=domain, periodic=periodic)
 
 
 def create_example5p5_data(is_periodic: bool) -> DiagramConfig:
@@ -349,7 +338,7 @@ def create_example5p5_data(is_periodic: bool) -> DiagramConfig:
 
     Returns
     -------
-    synthetmic.data.utils.DiagramConfig
+    synthetmic.DiagramConfig
     """
 
     L1 = 2
@@ -381,10 +370,4 @@ def create_example5p5_data(is_periodic: bool) -> DiagramConfig:
 
     target_vols = rel_vols * domain_vol
 
-    return DiagramConfig(
-        seeds=X,
-        volumes=target_vols,
-        domain=domain,
-        periodic=periodic,
-        initial_weights=None,
-    )
+    return DiagramConfig(seeds=X, volumes=target_vols, domain=domain, periodic=periodic)

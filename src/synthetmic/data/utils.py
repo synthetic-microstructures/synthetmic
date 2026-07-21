@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from synthetmic import _validate as vd
+from synthetmic._validate import check_points
 from synthetmic.typing import (
     BoolSequence,
     FloatArray,
@@ -105,75 +106,96 @@ class VoxelGrid:
         )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, init=False)
 class DiagramConfig:
     """
     Configuration data class for both Voronoi and Laguerre
     diagrams.
 
-    Attributes
+    Parameters
     ----------
-    seeds : FloatArray, shape (N,d)
-        Locations of the N seeds.
-    volumes : FloatArray, shape (N,)
-        Target volumes or areas of the N cells.
     domain : FloatArray, shape (d,2)
         minimum and maximum coordinates of the box in each of the d dimensions
         (d=2,3).
-    phases : IntArray or StrArray, shape (N,)
-        Phases of the N cells.
-    periodic : sequence of bool or None, optional, length d
+    seeds : FloatArray, shape (N,d)
+        Locations of the N seeds.
+    phases : IntArray or StrArray shape (N,) or None, optional
+        Phases of the N cells. If None, will be initialised to
+        an array of zeros.
+    periodic : BoolSequence or None, optional, length d
         Sequence of bool indicating whether or not the domain is periodic in
-        the different directions. None indicates no periodicity in any direction.
+        the different directions. If None, will be initialised to fully non-periodic.
+    volumes : FloatArray shape (N,) or None
+        Target volumes or areas of the N cells. This should be set to None
+        for Voronoi diagram configuration and must be set to a valid 1D array
+        for Laguerre diagram configuration.
     initial_weights : FloatArray or None, optional, shape (N,)
-        Initial guess for the weights.
+        Diagram weights. If None, will be initialised to an array of
+        zeros.
     """
 
-    seeds: FloatArray
     domain: FloatArray
-    volumes: FloatArray | None = None
-    phases: IntArray | StrArray | None = None
-    initial_weights: FloatArray | None = None
-    periodic: BoolSequence | None = None
+    seeds: FloatArray
+    phases: IntArray | StrArray
+    periodic: BoolSequence
+    volumes: FloatArray | None
+    initial_weights: FloatArray
 
-    def __post_init__(self) -> None:
+    def __init__(
+        self,
+        domain: FloatArray,
+        seeds: FloatArray,
+        phases: IntArray | StrArray | None = None,
+        periodic: BoolSequence | None = None,
+        volumes: FloatArray | None = None,
+        initial_weights: FloatArray | None = None,
+    ) -> None:
         vd.compose_rules(
-            vd.is_instance(np.ndarray), vd.check_array(allowed_types=[float, int])
-        )(self.seeds, "seeds")
+            vd.is_instance(np.ndarray),
+            vd.check_array(allowed_types=[float, int], allowed_ndims=[2, 3]),
+        )(seeds, "seeds")
+        check_points(seeds)
 
-        if self.volumes is not None:
-            vd.compose_rules(
-                vd.is_instance(np.ndarray), vd.check_array(allowed_types=[float, int])
-            )(self.volumes, "volumes")
+        n_grains, space_dim = seeds.shape
 
-        if self.phases is not None:
-            vd.compose_rules(
-                vd.is_instance(np.ndarray),
-                vd.check_array(allowed_types=[int, str]),
-            )(self.phases, "phases")
+        if phases is None:
+            phases = np.zeros(n_grains, dtype=int)
+        vd.compose_rules(
+            vd.is_instance(np.ndarray),
+            vd.check_array(allowed_types=[int, str], allowed_ndims=[1]),
+        )(phases, "phases")
+
+        if initial_weights is None:
+            initial_weights = np.zeros(n_grains, dtype=float)
+        vd.compose_rules(
+            vd.is_instance(np.ndarray),
+            vd.check_array(allowed_types=[float, int], allowed_ndims=[1]),
+        )(initial_weights, "initial_weights")
 
         vd.compose_rules(
             vd.is_instance(np.ndarray),
             vd.check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
-        )(self.domain, "domain")
+        )(domain, "domain")
 
-        vd.is_instance(list, tuple, allow_none=True)(self.periodic, "periodic")
-        if self.periodic is not None:
-            vd.check_periodic(self.periodic, "periodic")
+        vd.compose_rules(
+            vd.is_instance(np.ndarray, allow_none=True),
+            vd.check_array(allowed_types=[float, int], allowed_ndims=[1]),
+        )(volumes, "volumes")
 
-        vd.is_instance(np.ndarray, allow_none=True)(
-            self.initial_weights, "initial_weights"
+        if periodic is None:
+            periodic = create_periodicity(space_dim=space_dim, is_periodic=False)
+        vd.compose_rules(vd.is_instance(list, tuple), vd.check_periodic())(
+            periodic, "periodic"
         )
-        if self.initial_weights is not None:
-            vd.check_array(allowed_types=[float, int])(
-                self.initial_weights, "initial_weights"
-            )
 
         # check if the number of samples match
-        num_samples = []
-        for x in (self.seeds, self.volumes, self.initial_weights, self.phases):
-            if x is not None:
-                num_samples.append(x.shape[0])
+        num_samples = [
+            seeds.shape[0],
+            phases.shape[0],
+            initial_weights.shape[0],
+        ]
+        if volumes is not None:
+            num_samples.append(volumes.shape[0])
 
         if len(set(num_samples)) > 1:
             raise ValueError(
@@ -181,18 +203,21 @@ class DiagramConfig:
             )
 
         # check if space dimensions match
-        space_dims = [self.seeds.shape[1], self.domain.shape[0]]
-        if self.periodic is not None:
-            space_dims.append(len(self.periodic))
-
+        space_dims = [space_dim, domain.shape[0], len(periodic)]
         if len(set(space_dims)) > 1:
             raise ValueError(
                 f"one or more of seeds, domain, and periodic have inconsistent space dimension: {space_dims}."
             )
-
         if not set(space_dims).issubset({2, 3}):
             raise ValueError(f"""one or more of seeds, domain, and periodic have wrong space dimension: {space_dims}.
                 Supported space dimensions are 2 and 3.""")
+
+        self.domain = domain
+        self.seeds = seeds
+        self.phases = phases
+        self.periodic = tuple(periodic)
+        self.volumes = volumes
+        self.initial_weights = initial_weights
 
 
 def sample_random_seeds(
@@ -222,7 +247,7 @@ def sample_random_seeds(
     )
 
 
-def create_periodicity(space_dim: int, is_periodic: bool) -> list[bool] | None:
+def create_periodicity(space_dim: int, is_periodic: bool) -> BoolSequence:
     """
     Create `periodic` field for a fully periodic or
     fully non-period diagram configuration.
@@ -236,9 +261,9 @@ def create_periodicity(space_dim: int, is_periodic: bool) -> list[bool] | None:
 
     Returns
     -------
-    list[bool] or None
+    BoolSequence, len d
     """
-    return [True] * space_dim if is_periodic else None
+    return (is_periodic,) * space_dim
 
 
 def create_constant_volumes(

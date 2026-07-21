@@ -344,6 +344,8 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         -------
         synthetmic.VoronoiDiagramGenerator
         """
+        if not np.allclose(config.initial_weights, config.initial_weights[0]):
+            raise ValueError("Weights must either be all zero or equal.")
 
         omega, boxsize = build_domain(domain=config.domain, periodic=config.periodic)
 
@@ -351,9 +353,9 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         self.n_grains_in_ = n_grains
         self.space_dim_in_ = space_dim
 
-        weights = np.zeros(n_grains)
-
-        pd = PowerDiagram(positions=config.seeds, weights=weights, domain=omega)
+        pd = PowerDiagram(
+            positions=config.seeds, weights=config.initial_weights, domain=omega
+        )
         if config.periodic is not None:
             add_replicants(obj=pd, periodic=config.periodic, boxsize=boxsize)
 
@@ -446,13 +448,7 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         callback: Callable[[LaguerreEvent], None] = _noop_callback,
     ) -> Self:
         """
-        This function implements Algorithm 1 and 2 from the following paper:
-
-        Bourne, D.P., Kok, P.J.J., Roper, S.M. & Spanjer, W.D.T. (2020)
-        Laguerre tessellations and polycrystalline microstructures:
-        A fast algorithm for generating grains of given volumes,
-        Philosophical Magazine, 100, 2677-2707.
-        https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053
+        Fit Laguerre diagram on a given diagram configuration.
 
         Parameters
         ----------
@@ -464,6 +460,16 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         Returns
         -------
         synthetmic.LaguerreDiagramGenerator
+
+        References
+        ----------
+        This function implements Algorithm 1 and 2 from the following paper:
+
+        Bourne, D.P., Kok, P.J.J., Roper, S.M. & Spanjer, W.D.T. (2020)
+        Laguerre tessellations and polycrystalline microstructures:
+        A fast algorithm for generating grains of given volumes,
+        Philosophical Magazine, 100, 2677-2707.
+        https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053
         """
         if config.volumes is None:
             raise ValueError("`volumes` must be provided for Laguerre diagrams.")
@@ -478,23 +484,16 @@ class LaguerreDiagramGenerator(DiagramGenerator):
 
         # Set up the optimal transport problem
         omega, boxsize = build_domain(domain=config.domain, periodic=config.periodic)
-        initial_weights = (
-            np.zeros(n_grains)
-            if config.initial_weights is None
-            else config.initial_weights.copy()
-        )
         ot = OptimalTransport(
             positions=config.seeds,
             masses=config.volumes,
-            weights=initial_weights,
+            weights=config.initial_weights,
             domain=omega,
             obj_max_dm=err_tol,
             verbosity=0,
         )
 
-        # If there is periodicity, then add the replicants
-        if config.periodic is not None:
-            add_replicants(obj=ot, periodic=config.periodic, boxsize=boxsize)
+        add_replicants(obj=ot, periodic=config.periodic, boxsize=boxsize)
 
         mean_percentage_error = max_percentage_error = np.nan
         if self.n_iter == 0:
@@ -521,7 +520,7 @@ class LaguerreDiagramGenerator(DiagramGenerator):
                 if np.min(cell_volumes) > _EMPTY_CELL_VOLUME_TOL:
                     ot.adjust_weights()
                 else:
-                    ot.set_weights(initial_weights)
+                    ot.set_weights(config.initial_weights)
                     ot.adjust_weights()
 
                 mean_percentage_error, max_percentage_error = self._compute_errors(
