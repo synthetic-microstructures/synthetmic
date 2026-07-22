@@ -33,14 +33,14 @@ class VoronoiEvent:
         Current iteration number (1-based).
     total : int
         Total number of Lloyd iterations to be performed.
-    delta_pos_norm : float
-        Euclidean norm of the displacement between the updated seed positions
+    centroid_error_norm: float
+        Euclidean norm of the difference between the seed positions
         and the corresponding cell centroids.
     """
 
     iteration: int
     total: int
-    delta_pos_norm: float
+    centroid_error_norm: float
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,12 +60,16 @@ class LaguerreEvent:
     max_percentage_error : float
         Maximum relative percentage error between the computed and target cell
         volumes.
+    centroid_error_norm : float
+        Euclidean norm of the difference between the seed positions
+        and the corresponding cell centroids.
     """
 
     iteration: int
     total: int
     mean_percentage_error: float
     max_percentage_error: float
+    centroid_error_norm: float
 
 
 def _noop_callback(*args, **kwargs) -> None:
@@ -303,8 +307,8 @@ class VoronoiDiagramGenerator(DiagramGenerator):
 
     Attributes
     ----------
-    delta_pos_norm_ : float
-        Euclidean norm of the displacement between the updated seed positions
+    centroid_error_norm_ : float
+        Euclidean norm of the difference between the seed positions
         and the corresponding cell centroids.
     """
 
@@ -361,7 +365,7 @@ class VoronoiDiagramGenerator(DiagramGenerator):
 
         positions = pd.get_positions()
         centroids = pd.centroids()
-        delta_pos_norm = np.linalg.norm(centroids - positions)
+        centroid_error_norm = np.linalg.norm(centroids - positions)
 
         if self.n_iter > 0:
             for k in range(self.n_iter):
@@ -371,18 +375,18 @@ class VoronoiDiagramGenerator(DiagramGenerator):
 
                 pd.set_positions(positions)
                 centroids = pd.centroids()
-                delta_pos_norm = np.linalg.norm(centroids - positions)
+                centroid_error_norm = np.linalg.norm(centroids - positions)
 
                 callback(
                     VoronoiEvent(
                         iteration=k + 1,
                         total=self.n_iter,
-                        delta_pos_norm=delta_pos_norm,
+                        centroid_error_norm=centroid_error_norm,
                     )
                 )
 
         self.pd_ = pd
-        self.data_pos_norm_ = delta_pos_norm
+        self.data_pos_norm_ = centroid_error_norm
 
         return self
 
@@ -418,6 +422,9 @@ class LaguerreDiagramGenerator(DiagramGenerator):
     max_percentage_error_ : float
         Maximum relative percentage error between the computed and target cell
         volumes.
+    centroid_error_norm_ : float
+        Euclidean norm of the difference between the seed positions
+        and the corresponding cell centroids.
     """
 
     def __init__(
@@ -496,11 +503,14 @@ class LaguerreDiagramGenerator(DiagramGenerator):
 
         add_replicants(obj=ot, periodic=config.periodic, boxsize=boxsize)
 
-        mean_percentage_error = max_percentage_error = np.nan
+        mean_percentage_error = max_percentage_error = centroid_error_norm = np.nan
         if self.n_iter == 0:
             ot.adjust_weights()
             mean_percentage_error, max_percentage_error = self._compute_errors(
                 y_hat=ot.pd.integrals(), y=config.volumes
+            )
+            centroid_error_norm = np.linalg.norm(
+                ot.get_centroids() - ot.get_positions()
             )
 
         else:
@@ -517,15 +527,17 @@ class LaguerreDiagramGenerator(DiagramGenerator):
                 # empty, then we have a bad initial guess for the OT solver.
                 # Check whether the smallest volume is bigger than some tolerance:
                 # if so, then use the same weights; if not, reset the weights to initial_weights.
-                cell_volumes = ot.pd.integrals()
-                if np.min(cell_volumes) > _EMPTY_CELL_VOLUME_TOL:
+                if np.min(ot.pd.integrals()) > _EMPTY_CELL_VOLUME_TOL:
                     ot.adjust_weights()
                 else:
                     ot.set_weights(config.initial_weights)
                     ot.adjust_weights()
 
                 mean_percentage_error, max_percentage_error = self._compute_errors(
-                    y_hat=cell_volumes, y=config.volumes
+                    y_hat=ot.pd.integrals(), y=config.volumes
+                )
+                centroid_error_norm = np.linalg.norm(
+                    ot.get_centroids() - ot.get_positions()
                 )
 
                 callback(
@@ -534,14 +546,15 @@ class LaguerreDiagramGenerator(DiagramGenerator):
                         total=self.n_iter,
                         max_percentage_error=max_percentage_error,
                         mean_percentage_error=mean_percentage_error,
+                        centroid_error_norm=centroid_error_norm,
                     )
                 )
 
         self.pd_ = ot.pd
-        self.mean_percentage_error_, self.max_percentage_error_ = (
-            mean_percentage_error,
-            max_percentage_error,
-        )
+        self.mean_percentage_error_ = mean_percentage_error
+        self.max_percentage_error_ = max_percentage_error
+        self.centroid_error_norm_ = centroid_error_norm
+
         return self
 
     def get_params(self) -> dict[str, Any]:
