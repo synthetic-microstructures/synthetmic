@@ -6,6 +6,7 @@ from typing import Any, Callable, Self
 
 import numpy as np
 import pyvista as pv
+from damask import Rotation
 from pysdot import OptimalTransport, PowerDiagram
 
 from synthetmic._deprecated import warn_deprecated
@@ -172,16 +173,34 @@ class DiagramGenerator(ABC):
             size=size,
         )
 
-    # TODO: complete this with orientation or
-    # texture or Euler angle calculations
     def get_orientations(self) -> FloatArray:
-        check_is_fitted(self, ["pd_", "space_dim_in_"])
+        """
+        Get orientations of each grain in the generated diagram.
 
-        raise NotImplementedError
+        Returns
+        -------
+        orientations : FloatArray, shape (...,4)
+
+        Notes
+        -----
+        Currently, this method generates a random orientation for
+        each grain in the generated diagram using damask.Rotation.from_random
+        function. Therefore, calling it several times will generate different results.
+
+        In future release, a proper implementation will be used for
+        generating grain orientations.
+        """
+        check_is_fitted(self, ["n_grains_in_"])
+
+        return Rotation.from_random(shape=self.n_grains_in_).as_quaternion()
 
     def get_fitted_volumes(self) -> FloatArray:
         """
         Get the computed diagram cell volumes.
+
+        Returns
+        -------
+        FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.integrals()
@@ -189,6 +208,10 @@ class DiagramGenerator(ABC):
     def get_mesh(self) -> pv.UnstructuredGrid | pv.PolyData:
         """
         Get the underlying diagram mesh as a pyvista PolyData or UnstructuredGrid data object.
+
+        Returns
+        ------
+        pyvista.UnstructuredGrid or pyvista.PolyData
         """
         check_is_fitted(self, ["pd_"])
 
@@ -201,6 +224,10 @@ class DiagramGenerator(ABC):
     def get_positions(self) -> FloatArray:
         """
         Get the final positions of seeds.
+
+        Returns
+        -------
+        FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.get_positions()
@@ -208,6 +235,10 @@ class DiagramGenerator(ABC):
     def get_centroids(self) -> FloatArray:
         """
         Get the centroids of the cells in the Voronoi diagram.
+
+        Returns
+        -------
+        FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.centroids()
@@ -216,12 +247,15 @@ class DiagramGenerator(ABC):
         """
         Get the vertices of cells in the diagram.
 
-        Return
-        ------
-        A dictionary with keys as cell ids and values as the
-        corresponding vertices.
+        Returns
+        -------
+        vertices : dict[str, list]
+            A dictionary with keys as cell ids and values as the
+            corresponding vertices.
 
-        In 2D, the format looks like this:
+        Notes
+        -----
+        In 2D, the output format looks like this:
 
         {
             0: [v_1, v_2, ...],
@@ -275,6 +309,10 @@ class DiagramGenerator(ABC):
     def get_weights(self) -> FloatArray:
         """
         Get the weights of the diagram.
+
+        Returns
+        -------
+        FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.get_weights()
