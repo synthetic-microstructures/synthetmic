@@ -40,8 +40,8 @@ homepage = "https://github.com/synthetic-microstructures/synthetmic"
 issues = "https://github.com/synthetic-microstructures/synthetmic/issues"
 
 
-[tool.pyright]
-typeCheckingMode = "off"
+[tool.ty.src]
+respect-ignore-files = false
 
 [build-system]
 requires = ["hatchling"]

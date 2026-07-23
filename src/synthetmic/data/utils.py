@@ -38,10 +38,10 @@ class GrainData:
         if len(set(lengths.values())) != 1:
             raise ValueError(f"All arrays must have the same length, got {lengths}.")
 
-    def to_damask_config_material_args(self, file: Path | str) -> None:
+    def to_damask_configmaterial_params(self, file: Path | str) -> None:
         """
         Write grain data to damask.ConfigMaterial class
-        arguments. This will be written to a numpy .npz
+        parameters. This will be written to a numpy .npz
         file with the following field names:
         "O": orientations, "phase": phases.
 
@@ -77,10 +77,10 @@ class VoxelGrid:
         if not all(len(x) == self.voxels.ndim for x in (self.size, self.origin)):
             raise ValueError("All space dimensions must match.")
 
-    def to_damask_geom_grid_args(self, file: Path | str) -> None:
+    def to_damask_geomgrid_params(self, file: Path | str) -> None:
         """
         Write fields to damask.GeomGrid class
-        arguments. This will be written to a numpy .npz
+        parameters. This will be written to a numpy .npz
         file with the following field names:
         "material": voxels, "origin": origin, "size": size.
 
