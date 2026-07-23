@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 import numpy as np
@@ -220,6 +220,42 @@ class DiagramConfig:
         self.volumes = volumes
         self.initial_weights = initial_weights
 
+    def to_npz(self, file: Path | str) -> None:
+        """
+        Export config to npz file.
+
+        Parameters
+        ----------
+        file: file, str, pathlib.Path
+            Either the filename (string) or an open file (file-like object) where
+            the data will be saved. If file is a string or a Path,
+            the .npz extension will be appended to the filename if it is not already there.
+        """
+
+        np.savez(file, **asdict(self), allow_pickle=True)
+
+    @staticmethod
+    def load(file: Path | str) -> "DiagramConfig":
+        """
+        Load diagram config from npz file.
+
+        Parameters
+        ----------
+        file : file, str, pathlib.Path
+            File to load configuration from.
+
+        Returns
+        -------
+        loaded : synthetmic.DiagramConfig
+            Loaded diagram config.
+        """
+        params = dict(np.load(file=file, allow_pickle=True))
+        params["periodic"] = tuple(map(bool, params["periodic"]))
+        volumes = params["volumes"]
+        params["volumes"] = volumes.item() if volumes.ndim == 0 else volumes
+
+        return DiagramConfig(**params)
+
 
 def sample_random_seeds(
     domain: FloatArray, n_grains: int, random_state: int | None = None
@@ -239,7 +275,7 @@ def sample_random_seeds(
 
     Returns
     -------
-    FloatArray, shape (n_grains, d)
+    seeds : FloatArray, shape (n_grains, d)
     """
     np.random.seed(random_state)
 
@@ -262,7 +298,7 @@ def create_periodicity(space_dim: int, is_periodic: bool) -> BoolSequence:
 
     Returns
     -------
-    BoolSequence, len d
+    periodic : BoolSequence, len d
     """
     return (is_periodic,) * space_dim
 
@@ -283,6 +319,6 @@ def create_constant_volumes(
 
     Returns
     -------
-    FloatArray, shape (n_grains,)
+    volumes : FloatArray, shape (n_grains,)
     """
     return (np.ones(n_grains) / n_grains) * domain_volume
