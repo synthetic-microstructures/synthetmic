@@ -164,7 +164,7 @@ def plot_cells_as_pyvista_fig(
 
     Returns
     -------
-    plotter : pyvista Plotter object
+    plotter : pyvista.Plotter
     """
     mesh = generator.get_mesh()
 

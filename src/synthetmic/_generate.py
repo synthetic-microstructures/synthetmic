@@ -138,7 +138,7 @@ class DiagramGenerator(ABC):
 
         Returns
         -------
-        synthetmic.VoxelGrid
+        voxel_grid : synthetmic.VoxelGrid
         """
         check_is_fitted(self, ["pd_", "space_dim_in_"])
 
@@ -200,7 +200,7 @@ class DiagramGenerator(ABC):
 
         Returns
         -------
-        FloatArray
+        volumes : FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.integrals()
@@ -211,7 +211,7 @@ class DiagramGenerator(ABC):
 
         Returns
         ------
-        pyvista.UnstructuredGrid or pyvista.PolyData
+        mesh : pyvista.UnstructuredGrid or pyvista.PolyData
         """
         check_is_fitted(self, ["pd_"])
 
@@ -227,7 +227,7 @@ class DiagramGenerator(ABC):
 
         Returns
         -------
-        FloatArray
+        positions : FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.get_positions()
@@ -238,7 +238,7 @@ class DiagramGenerator(ABC):
 
         Returns
         -------
-        FloatArray
+        centroids : FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.centroids()
@@ -312,7 +312,7 @@ class DiagramGenerator(ABC):
 
         Returns
         -------
-        FloatArray
+        weights : FloatArray
         """
         check_is_fitted(self, ["pd_"])
         return self.pd_.get_weights()
@@ -384,7 +384,8 @@ class VoronoiDiagramGenerator(DiagramGenerator):
 
         Returns
         -------
-        synthetmic.VoronoiDiagramGenerator
+        generator : synthetmic.VoronoiDiagramGenerator
+            Fitted synthetmic.VoronoiDiagramGenerator.
         """
         if not np.allclose(config.initial_weights, config.initial_weights[0]):
             raise ValueError("Weights must either be all zero or equal.")
@@ -431,6 +432,10 @@ class VoronoiDiagramGenerator(DiagramGenerator):
     def get_params(self) -> dict[str, Any]:
         """
         Get the parameters of this instance as a dictionary.
+
+        Returns
+        -------
+        params : dist[str, Any]
         """
 
         return dict(n_iter=self.n_iter, damp_param=self.damp_param)
@@ -505,7 +510,8 @@ class LaguerreDiagramGenerator(DiagramGenerator):
 
         Returns
         -------
-        synthetmic.LaguerreDiagramGenerator
+        generator : synthetmic.LaguerreDiagramGenerator
+            Fitted synthetmic.LaguerreDiagramGenerator.
 
         References
         ----------
@@ -598,6 +604,10 @@ class LaguerreDiagramGenerator(DiagramGenerator):
     def get_params(self) -> dict[str, Any]:
         """
         Get the parameters of this instance as a dictionary.
+
+        Returns
+        -------
+        params : dist[str, Any]
         """
 
         return dict(tol=self.tol, n_iter=self.n_iter, damp_param=self.damp_param)
