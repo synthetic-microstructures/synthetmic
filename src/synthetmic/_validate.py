@@ -2,10 +2,125 @@ from typing import Any, Callable, Type
 
 import numpy as np
 
-from synthetmic.typing import BoolSequence, FloatArray, NumericArray
+from synthetmic.typing import BoolSequence, FloatArray, IntArray, NumericArray, StrArray
 
 
-def validate_generator_config(
+def check_space_dim(
+    seeds: FloatArray, domain: FloatArray, periodic: BoolSequence
+) -> None:
+    space_dims = [seeds.shape[1], domain.shape[0], len(periodic)]
+    if len(set(space_dims)) > 1:
+        raise ValueError(
+            f"one or more of seeds, domain, and periodic have inconsistent space dimension: {space_dims}."
+        )
+    if not set(space_dims).issubset({2, 3}):
+        raise ValueError(f"""one or more of seeds, domain, and periodic have wrong space dimension: {space_dims}.
+                Supported space dimensions are 2 and 3.""")
+
+
+def check_num_samples(
+    seeds: FloatArray,
+    phases: IntArray | StrArray,
+    initial_weights: FloatArray,
+    volumes: FloatArray,
+) -> None:
+    num_samples = [
+        seeds.shape[0],
+        phases.shape[0],
+        initial_weights.shape[0],
+        volumes.shape[0],
+    ]
+
+    if len(set(num_samples)) > 1:
+        raise ValueError(
+            f"one or more of seeds, volumes, and initial_weights have inconsistent number of samples: {num_samples}."
+        )
+
+
+def check_periodic(periodic: BoolSequence | None, space_dim: int) -> BoolSequence:
+    if periodic is None:
+        periodic = (False,) * space_dim
+        compose_rules(is_instance(list, tuple), is_periodic())(periodic, "periodic")
+
+    return tuple(periodic)
+
+
+def check_volumes(
+    volumes: FloatArray | None, domain: FloatArray, n_grains: int
+) -> FloatArray:
+    total_volume = np.prod(domain[:, 1] - domain[:, 0])
+
+    if volumes is None:
+        volumes = np.ones(n_grains) * total_volume / n_grains
+
+    _TOTAL_VOL_TOL = 10e-6
+    if abs(volumes.sum() - total_volume) > _TOTAL_VOL_TOL:
+        raise ValueError(
+            f"Total volume difference is greater than tolerance: {_TOTAL_VOL_TOL}."
+        )
+
+    compose_rules(
+        is_instance(np.ndarray),
+        check_array(allowed_types=[float, int], allowed_ndims=[1]),
+    )(volumes, "volumes")
+
+    return volumes
+
+
+def check_initial_weights(
+    initial_weights: FloatArray | None, n_grains: int
+) -> FloatArray:
+    if initial_weights is None:
+        initial_weights = np.zeros(n_grains, dtype=float)
+        compose_rules(
+            is_instance(np.ndarray),
+            check_array(allowed_types=[float, int], allowed_ndims=[1]),
+        )(initial_weights, "initial_weights")
+
+    return initial_weights
+
+
+def check_seeds(seeds: FloatArray, domain: FloatArray) -> None:
+    compose_rules(
+        is_instance(np.ndarray),
+        check_array(allowed_types=[float, int], allowed_ndims=[2, 3]),
+    )(seeds, "seeds")
+    check_points(seeds)
+
+    coord_names = ("x", "y", "z")
+    for i, bound in enumerate(domain):
+        min_ = seeds[:, i].min()
+        max_ = seeds[:, i].max()
+
+        if not (bound[0] <= min_ <= max_ <= bound[1]):
+            raise ValueError(
+                f"""Expected {coord_names[i]}-coordinate values to be in {list(bound)}
+                but values are in [{min_:.2f}, {max_:.2f}]."""
+            )
+
+
+def check_domain(domain: FloatArray) -> None:
+    compose_rules(
+        is_instance(np.ndarray),
+        check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
+    )(domain, "domain")
+
+
+def check_phases(
+    phases: IntArray | StrArray | None, n_grains: int
+) -> IntArray | StrArray:
+    if phases is None:
+        phases = np.zeros(n_grains, dtype=int)
+
+    compose_rules(
+        is_instance(np.ndarray),
+        check_array(allowed_types=[int, str], allowed_ndims=[1]),
+    )(phases, "phases")
+
+    return phases
+
+
+def check_generator_config(
     tol: float | None,
     n_iter: int,
     damp_param: float,
@@ -58,12 +173,12 @@ def gte(rhs: float) -> Callable[[float | None, str], None]:
 
 def is_instance(*args, allow_none: bool = False) -> Callable[[Any, str], None]:
     def _out(x: Any, name: str) -> None:
-        check = any(isinstance(x, i) for i in args)
+        check = any([isinstance(x, i) for i in args])
         rule = check or (x is None) if allow_none else check
 
         if not rule:
             raise TypeError(
-                f"{name} must be of type {'or '.join(args)} but {type(x)} is provided."
+                f"{name} must be of type {'or '.join([i.__name__ for i in args])} but {type(x).__name__} is provided."
             )
 
     return _out
@@ -138,7 +253,7 @@ def check_array(
     return _out
 
 
-def check_periodic() -> Callable[[BoolSequence, str], None]:
+def is_periodic() -> Callable[[BoolSequence, str], None]:
     def _out(x: BoolSequence, name: str) -> None:
         if len(x) not in (2, 3):
             raise ValueError(

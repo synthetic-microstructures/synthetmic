@@ -11,7 +11,7 @@ from pysdot import OptimalTransport, PowerDiagram
 
 from synthetmic._deprecated import warn_deprecated
 from synthetmic._errors import check_is_fitted
-from synthetmic._validate import validate_generator_config
+from synthetmic._validate import check_generator_config
 from synthetmic.data.utils import DiagramConfig, VoxelGrid
 from synthetmic.types import DEPRECATED, MissingType
 from synthetmic.typing import FloatArray, IntSequence
@@ -124,7 +124,7 @@ class DiagramGenerator(ABC):
         self, points_per_dim: IntSequence, domain: FloatArray | None = None
     ) -> VoxelGrid:
         """
-        Voxelise diagram.
+        Voxelise fully periodic and fully non-periodic diagrams.
 
         Parameters
         ----------
@@ -142,11 +142,18 @@ class DiagramGenerator(ABC):
         """
         check_is_fitted(self, ["pd_", "space_dim_in_"])
 
-        if domain is None:
-            origin = self.pd_.get_domain().min_position()
-            size = self.pd_.get_domain().max_position() - origin
+        origin = self.pd_.get_domain().min_position()
+        max_position = self.pd_.get_domain().max_position()
+        size = max_position - origin
 
-        else:
+        if domain is not None:
+            for i, bound in enumerate(domain):
+                a, b = bound
+                if not origin[i] <= a <= b <= max_position[i]:
+                    raise ValueError(
+                        f"Interval [{a}, {b}] is out of original diagram domain."
+                    )
+
             domain = np.asarray(domain)
             origin = domain[:, 0]
             size = domain[:, 1] - origin
@@ -356,7 +363,7 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         damp_param: float = 1.0,
         verbose: bool | MissingType = DEPRECATED,
     ) -> None:
-        validate_generator_config(
+        check_generator_config(
             tol=None,
             n_iter=n_iter,
             damp_param=damp_param,
@@ -477,7 +484,7 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         damp_param: float = 1.0,
         verbose: bool | MissingType = DEPRECATED,
     ):
-        validate_generator_config(
+        check_generator_config(
             tol=tol,
             n_iter=n_iter,
             damp_param=damp_param,
@@ -523,8 +530,6 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         Philosophical Magazine, 100, 2677-2707.
         https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053
         """
-        if config.volumes is None:
-            raise ValueError("`volumes` must be provided for Laguerre diagrams.")
 
         n_grains, space_dim = config.seeds.shape
         self.n_grains_in_ = n_grains
