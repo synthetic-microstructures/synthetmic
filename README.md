@@ -12,7 +12,7 @@ pip install synthetmic
 > uv add synthetmic
 
 ## Usage
-To use this package to generate synthetic microstructures (say Laguerre diagram),
+To use this package to generate synthetic microstructures (say Laguerre diagrams),
 you need to import the generator class as follows:
 ```python
 from synthetmic import LaguerreDiagramGenerator
@@ -79,9 +79,7 @@ plot_cells_as_pyvista_fig(
 
 The generated HTML file can be viewed via any browser of your choice.
 
-If you prefer a static figure, you can save it with any of the
-file formats or extensions namely pdf, eps, ps, tex, and svg.
-Saving the figure as pdf looks like:
+If you prefer a static figure, you can save it as a pdf, eps, ps, or svg file. For example:
 ```python
 plot_cells_as_pyvista_fig(
         generator=generator,
@@ -91,9 +89,9 @@ plot_cells_as_pyvista_fig(
 
 To see more usage examples, see the `examples` folder or check below on how to run them via `cli.py`.
 
-The example above uses a custom data. If you would like to use one of the data provided by this
-package, they can be loaded from the `synthetmic.data.paper` and `synthetmic.data.toy` modules.
-The former gives access to the configuration for generating some figures from this
+The example above uses custom data. If you would like to use the data provided by this
+package, it can be loaded from the `synthetmic.data.paper` and `synthetmic.data.toy` modules.
+The former gives access to the data for generating some figures from this
 [paper](https://www.tandfonline.com/doi/full/10.1080/14786435.2020.1790053)
 and the latter provides access to some useful toy data. All data creators or loaders from these
 modules return a `synthetmic.data.utils.DiagramConfig` object.
