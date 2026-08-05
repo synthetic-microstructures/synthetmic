@@ -3,7 +3,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from examples.utils import set_fig_size
-from synthetmic import VoronoiDiagramGenerator
+from synthetmic import DiagramConfig, VoronoiDiagramGenerator
 from synthetmic.data import toy
 from synthetmic.plot import plot_2dcells_as_matplotlib_fig, plot_cells_as_pyvista_fig
 
@@ -14,15 +14,13 @@ def voronoi_with_random_seeds(
     domain, _ = toy.create_unit_domain(space_dim)
     seeds = toy.sample_random_seeds(domain=domain, n_grains=n_grains)
 
-    vdg = VoronoiDiagramGenerator(
-        n_iter=n_iter,
-        damp_param=1.0,
-        verbose=True,
-    )
+    vdg = VoronoiDiagramGenerator(n_iter=n_iter, damp_param=1.0)
     vdg.fit(
-        seeds=seeds,
-        domain=domain,
-        periodic=[True] * space_dim if is_periodic else None,
+        DiagramConfig(
+            seeds=seeds,
+            domain=domain,
+            periodic=[True] * space_dim if is_periodic else None,
+        )
     )
 
     fig, ax = plt.subplots(figsize=set_fig_size())
@@ -51,5 +49,3 @@ def voronoi_with_random_seeds(
 
         case _:
             raise ValueError("space_dim must be 2 or 3.")
-
-    return None

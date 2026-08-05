@@ -1,5 +1,3 @@
-from dataclasses import asdict
-
 import matplotlib.pyplot as plt
 
 from examples.utils import (
@@ -24,7 +22,7 @@ def recreate_fig1(save_path: str, is_periodic: bool) -> None:
     data = create_example3_data(is_periodic)
 
     ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
-    ldg.fit(**asdict(data))
+    ldg.fit(data)
 
     _, ax = plt.subplots(figsize=set_fig_size())
     ax = plot_2dcells_as_matplotlib_fig(
@@ -38,8 +36,6 @@ def recreate_fig1(save_path: str, is_periodic: bool) -> None:
     ax.set_aspect("equal")
 
     plt.savefig(save_path, bbox_inches="tight")
-
-    return None
 
 
 def recreate_fig2(save_path: str, is_periodic: bool) -> None:
@@ -64,7 +60,7 @@ def recreate_fig2(save_path: str, is_periodic: bool) -> None:
         )
 
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=n_iter)
-        ldg.fit(**asdict(data))
+        ldg.fit(data)
 
         ax = plot_2dcells_as_matplotlib_fig(
             generator=ldg,
@@ -80,8 +76,6 @@ def recreate_fig2(save_path: str, is_periodic: bool) -> None:
         ax.set_aspect("equal")
 
     plt.savefig(save_path, bbox_inches="tight")
-
-    return None
 
 
 def recreate_fig4(save_path: str, is_periodic: bool) -> None:
@@ -108,7 +102,7 @@ def recreate_fig4(save_path: str, is_periodic: bool) -> None:
         data = create_example4_data(init, is_periodic)
 
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
-        ldg.fit(**asdict(data))
+        ldg.fit(data)
 
         plot_2dcells_as_matplotlib_fig(
             generator=ldg,
@@ -121,8 +115,6 @@ def recreate_fig4(save_path: str, is_periodic: bool) -> None:
         ax.set_aspect("equal")
 
     plt.savefig(save_path, bbox_inches="tight")
-
-    return None
 
 
 def recreate_fig5(save_path: str, is_periodic: bool) -> None:
@@ -149,7 +141,7 @@ def recreate_fig5(save_path: str, is_periodic: bool) -> None:
         data = create_example4b_data(gradient, is_periodic)
 
         ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER)
-        ldg.fit(**asdict(data))
+        ldg.fit(data)
 
         plot_2dcells_as_matplotlib_fig(
             generator=ldg,
@@ -162,5 +154,3 @@ def recreate_fig5(save_path: str, is_periodic: bool) -> None:
         ax.set_aspect("equal")
 
     plt.savefig(save_path, bbox_inches="tight")
-
-    return None

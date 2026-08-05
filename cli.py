@@ -50,8 +50,6 @@ def recreate(example: str, save_dir: str, interactive: bool, periodic: bool) -> 
         ):
             fn(save_path=Path(save_dir, f"{sn}.pdf"), is_periodic=periodic)
 
-        return None
-
     def _three_d() -> None:
         ext = "html" if interactive else "pdf"
         for fn, sn in zip((recreate_fig12, recreate_fig13), ("figure12", "figure13")):
@@ -59,8 +57,6 @@ def recreate(example: str, save_dir: str, interactive: bool, periodic: bool) -> 
                 save_path=Path(save_dir, f"{sn}.{ext}"),
                 is_periodic=periodic,
             )
-
-        return None
 
     click.echo(
         color_text(
@@ -102,8 +98,6 @@ def recreate(example: str, save_dir: str, interactive: bool, periodic: bool) -> 
                 color=True,
             )
 
-            return None
-
     click.echo(
         color_text(
             f"Done! See {save_dir} for the recreated figures",
@@ -111,8 +105,6 @@ def recreate(example: str, save_dir: str, interactive: bool, periodic: bool) -> 
         ),
         color=True,
     )
-
-    return None
 
 
 @entry.command()
@@ -170,8 +162,6 @@ def analyse(analysis: str, save_dir: str, periodic: bool) -> None:
                 color=True,
             )
 
-            return None
-
     click.echo(
         color_text(
             f"Done! See {save_dir} for the generated figures",
@@ -179,8 +169,6 @@ def analyse(analysis: str, save_dir: str, periodic: bool) -> None:
         ),
         color=True,
     )
-
-    return None
 
 
 @entry.command()
@@ -225,8 +213,6 @@ def voronoi(
             n_iter=n_iter,
         )
 
-        return None
-
     def _three_d() -> None:
         ext = "html" if interactive else "pdf"
         voronoi_with_random_seeds(
@@ -239,8 +225,6 @@ def voronoi(
             n_grains=n_grains,
             n_iter=n_iter,
         )
-
-        return None
 
     click.echo(
         color_text(
@@ -282,8 +266,6 @@ def voronoi(
                 color=True,
             )
 
-            return None
-
     click.echo(
         color_text(
             f"Done! See {save_dir} for the recreated figures",
@@ -291,8 +273,6 @@ def voronoi(
         ),
         color=True,
     )
-
-    return None
 
 
 if __name__ == "__main__":

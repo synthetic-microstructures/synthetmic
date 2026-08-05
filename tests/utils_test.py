@@ -1,9 +1,8 @@
-from dataclasses import asdict
-
 import numpy as np
 from pysdot import PowerDiagram
 from pysdot.domain_types import ConvexPolyhedraAssembly
 
+from synthetmic import DiagramConfig, LaguerreDiagramGenerator
 from synthetmic.data.toy import (
     create_data_with_lognormal_volumes,
     create_periodicity,
@@ -11,11 +10,10 @@ from synthetmic.data.toy import (
     sample_random_seeds,
 )
 from synthetmic.data.utils import create_constant_volumes
-from synthetmic.generate import LaguerreDiagramGenerator
-from synthetmic.utils import mesh_diagram
+from synthetmic.utils import assign_points_to_grains
 
 
-def test_mesh_diagram_with_non_periodic_domain() -> None:
+def test_assign_points_to_grains_with_non_periodic_domain() -> None:
     seeds = np.array([[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.75]])
     domain = ConvexPolyhedraAssembly()
     domain.add_box(np.zeros(seeds.shape[1]), np.ones(seeds.shape[1]))
@@ -24,12 +22,10 @@ def test_mesh_diagram_with_non_periodic_domain() -> None:
 
     points = np.array([[0.1, 0.1], [0.9, 0.2], [0.7, 0.6], [0.3, 0.8]])
     expected = np.array([0, 1, 2, 3], dtype=np.int32)
-    assert np.allclose(expected, mesh_diagram(points=points, pd=pd))
-
-    return None
+    assert np.allclose(expected, assign_points_to_grains(points=points, pd=pd))
 
 
-def test_mesh_diagram_with_periodic_domain() -> None:
+def test_assign_points_to_grains_with_periodic_domain() -> None:
     SPACE_DIM = 2
     N_GRAINS = 4
     IS_PERIODIC = True
@@ -39,38 +35,36 @@ def test_mesh_diagram_with_periodic_domain() -> None:
     volumes = create_constant_volumes(n_grains=N_GRAINS, domain_volume=vol)
     periodic = create_periodicity(space_dim=SPACE_DIM, is_periodic=IS_PERIODIC)
 
-    g = LaguerreDiagramGenerator(verbose=False)
-    g.fit(seeds=seeds, volumes=volumes, domain=domain, periodic=periodic)
+    g = LaguerreDiagramGenerator()
+    g.fit(
+        config=DiagramConfig(
+            seeds=seeds, volumes=volumes, domain=domain, periodic=periodic
+        )
+    )
 
     expected = np.array([2, 3, 0, 3, 2, 1], dtype=np.int32)
     points = np.array(
         [[0.1, 0.1], [0.2, 0.8], [0.5, 0.1], [0.9, 0.9], [0.9, 0.4], [0.6, 0.5]]
     )
-    calculated = mesh_diagram(points=points, pd=g.optimal_transport_.pd, domain=domain)
+    calculated = assign_points_to_grains(points=points, pd=g.pd_, domain=domain)
     calculated_bruteforce = _bruteforce_mesh_periodic_diagram(
-        points=points, pd=g.optimal_transport_.pd, box=domain
+        points=points, pd=g.pd_, box=domain
     )
     assert np.allclose(expected, calculated)
     assert np.allclose(expected, calculated_bruteforce)
 
-    return None
 
+def test_assign_points_to_grains_against_bruteforce() -> None:
+    config = create_data_with_lognormal_volumes(is_periodic=True, random_state=40)
+    g = LaguerreDiagramGenerator()
+    g.fit(config=config)
 
-def test_mesh_diagram_against_bruteforce() -> None:
-    data = create_data_with_lognormal_volumes(is_periodic=True, random_state=40)
-    g = LaguerreDiagramGenerator(verbose=False)
-    g.fit(**asdict(data))
-
-    points = sample_random_seeds(domain=data.domain, n_grains=100, random_state=40)
-    calculated = mesh_diagram(
-        points=points, pd=g.optimal_transport_.pd, domain=data.domain
-    )
+    points = sample_random_seeds(domain=config.domain, n_grains=100, random_state=40)
+    calculated = assign_points_to_grains(points=points, pd=g.pd_, domain=config.domain)
     calculated_bruteforce = _bruteforce_mesh_periodic_diagram(
-        points=points, pd=g.optimal_transport_.pd, box=data.domain
+        points=points, pd=g.pd_, box=config.domain
     )
     assert np.allclose(calculated, calculated_bruteforce)
-
-    return None
 
 
 def _tile_positions(positions: np.ndarray, boxsize: np.ndarray) -> np.ndarray:

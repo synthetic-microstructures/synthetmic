@@ -1,5 +1,4 @@
 import time
-from dataclasses import asdict
 from enum import StrEnum, auto
 
 import matplotlib.pyplot as plt
@@ -36,11 +35,9 @@ def recreate_figure6(save_path: str, is_periodic: bool) -> None:
                 n_grains=n_grains, r=r, is_periodic=is_periodic
             )
 
-            ldg = LaguerreDiagramGenerator(
-                tol=TOL, n_iter=N_ITER, damp_param=1.0, verbose=False
-            )
+            ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER, damp_param=1.0)
             start = time.time()
-            ldg.fit(**asdict(data))
+            ldg.fit(data)
             end = time.time()
             duration = end - start
 
@@ -77,8 +74,6 @@ def recreate_figure6(save_path: str, is_periodic: bool) -> None:
 
     plt.savefig(save_path, bbox_inches="tight")
 
-    return None
-
 
 def damp_param_effect(is_periodic: bool, save_path: str) -> None:
     N_GRAINS_SEQ = (1000, 2000, 3000)
@@ -98,10 +93,8 @@ def damp_param_effect(is_periodic: bool, save_path: str) -> None:
         max_percentage_errors = np.zeros_like(damp_params)
 
         for j, dp in enumerate(damp_params):
-            ldg = LaguerreDiagramGenerator(
-                tol=TOL, n_iter=N_ITER, damp_param=dp, verbose=False
-            )
-            ldg.fit(**asdict(data))
+            ldg = LaguerreDiagramGenerator(tol=TOL, n_iter=N_ITER, damp_param=dp)
+            ldg.fit(data)
 
             print(
                 f"\t* damp param = {dp:.4f} seconds, max percentage error = {ldg.max_percentage_error_:.4f}%, mean percentage error = {ldg.mean_percentage_error_:.4f}%"
@@ -123,5 +116,3 @@ def damp_param_effect(is_periodic: bool, save_path: str) -> None:
     ax.legend(frameon=False)
 
     plt.savefig(save_path, bbox_inches="tight")
-
-    return None

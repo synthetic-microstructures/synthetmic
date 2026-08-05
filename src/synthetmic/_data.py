@@ -3,42 +3,44 @@ from scipy.spatial import KDTree
 from scipy.spatial.distance import cdist
 
 from synthetmic.data.utils import sample_random_seeds
+from synthetmic.typing import FloatArray, FloatSequence, IntArray
 
 
-def map_positions(positions: np.ndarray, boxsize: np.ndarray) -> np.ndarray:
-    return np.remainder(positions, boxsize)
+def map_positions(positions: FloatArray, boxsize: FloatSequence) -> FloatArray:
+    return np.remainder(positions, np.asarray(boxsize))
 
 
-def lift_positions(positions: np.ndarray, weights: np.ndarray) -> np.ndarray:
+def lift_positions(positions: FloatArray, weights: FloatArray) -> FloatArray:
     extra_coords = np.sqrt(weights.max() - weights)
     return np.column_stack((positions, extra_coords))
 
 
-def lift_points(points: np.ndarray) -> np.ndarray:
+def lift_points(points: FloatArray) -> FloatArray:
     return np.column_stack((points, np.zeros(points.shape[0])))
 
 
-def compute_non_periodic_size(max_coord: float, boxsize: np.ndarray) -> float:
-    boxsize = np.asarray(boxsize)
+def compute_non_periodic_size(max_coord: float, boxsize: FloatSequence) -> float:
     TAU = 1e-6
 
-    return np.sqrt(4 * np.sum(boxsize**2) + max_coord**2) + max_coord + TAU
+    return (
+        np.sqrt(4 * np.sum(np.asarray(boxsize) ** 2) + max_coord**2) + max_coord + TAU
+    )
 
 
 def kdtree_closest_points(
-    points: np.ndarray,
-    all_points: np.ndarray,
-    boxsize: np.ndarray | None = None,
+    points: FloatArray,
+    all_points: FloatArray,
+    boxsize: FloatSequence | None = None,
     workers: int = -1,
-) -> np.ndarray:
+) -> IntArray:
     tree = KDTree(data=all_points, boxsize=boxsize)
     _, indices = tree.query(points, workers=workers)
     return np.asarray(indices, dtype=np.int32)
 
 
 def cdist_closest_points(
-    points: np.ndarray, all_points: np.ndarray, weights: np.ndarray | None = None
-) -> np.ndarray:
+    points: FloatArray, all_points: FloatArray, weights: FloatArray | None = None
+) -> FloatArray:
 
     squared_distances = cdist(points, all_points, metric="sqeuclidean")
 
@@ -48,15 +50,15 @@ def cdist_closest_points(
     return np.argmin(squared_distances - weights, axis=1)
 
 
-def calulate_rel_vols(n1: int, n2: int, r: int) -> np.ndarray:
+def calulate_rel_vols(n1: int, n2: int, r: int) -> FloatArray:
     vols = np.concatenate((np.ones(n1), r * np.ones(n2)))
 
     return vols / np.sum(vols)
 
 
 def create_layered_points(
-    n_layer_arr: np.ndarray, r_layer_arr: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+    n_layer_arr: FloatArray, r_layer_arr: FloatArray
+) -> tuple[FloatArray, FloatArray]:
     if isinstance(n_layer_arr, list):
         n_layer_arr = np.array(n_layer_arr)
 
@@ -85,7 +87,7 @@ def create_layered_points(
     return np.column_stack((xy_coord, z_coord)), rel_vols
 
 
-def create_subdomains(domain: np.ndarray, n_subdomains: int) -> list[np.ndarray]:
+def create_subdomains(domain: FloatArray, n_subdomains: int) -> list[FloatArray]:
     x_min, x_max = domain[0]
     y_min, y_max = domain[1]
 
@@ -100,7 +102,7 @@ def create_subdomains(domain: np.ndarray, n_subdomains: int) -> list[np.ndarray]
 
 
 def create_banded_points(
-    subdomains: list[np.ndarray],
+    subdomains: list[FloatArray],
     n_points_small: int,
     n_points_large: int,
     volume_frac: float,
@@ -120,7 +122,7 @@ def create_banded_points(
 
 def create_uniform_disc_points(
     center: tuple[float, float], radius: float, n_points: int
-) -> np.ndarray:
+) -> FloatArray:
     r = radius * np.sqrt(np.random.random(n_points))
     theta = 2 * np.pi * np.random.random(n_points)
     x = center[0] + r * np.cos(theta)
@@ -131,7 +133,7 @@ def create_uniform_disc_points(
 
 def generate_discs(
     centers: list[tuple[float, float]], radius: float, n_points: int
-) -> list[np.ndarray]:
+) -> list[FloatArray]:
     all_points = []
 
     for center in centers:
@@ -142,11 +144,11 @@ def generate_discs(
 
 
 def sample_points_outside_discs(
-    rect: np.ndarray,
+    rect: FloatArray,
     disc_centers: list[tuple[float, float]],
     disc_radius: float,
     n_points: int,
-) -> np.ndarray:
+) -> FloatArray:
     accepted = []
     batch_size = max(1000, n_points * 2)
     radius_sq = disc_radius**2

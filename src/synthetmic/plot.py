@@ -11,15 +11,16 @@ from matplotlib.axes import Axes
 from vtk.numpy_interface import dataset_adapter as dsa
 from vtk.util.numpy_support import vtk_to_numpy
 
-from synthetmic._internal._consts import PyvistaSupportedExtension
-from synthetmic.generate import DiagramGenerator
+from synthetmic import DiagramGenerator
+from synthetmic._consts import PyvistaSupportedExtension
+from synthetmic.typing import FloatArray
 
 
 def plot_2dcells_as_matplotlib_fig(
     generator: DiagramGenerator,
     ax: Axes | None = None,
     title: str | None = None,
-    colorby: np.ndarray | list[float] | None = None,
+    colorby: FloatArray | None = None,
     colormap: str = "plasma",
     save_path: str | Path | None = None,
 ) -> Axes:
@@ -28,31 +29,29 @@ def plot_2dcells_as_matplotlib_fig(
 
     Parameters
     ----------
-
-    generator : DiagramGenerator
-        a fitted DiagramGenerator object (e.g., LeguerreDiagramGenerator).
+    generator : synthetmic.DiagramGenerator
+        a fitted DiagramGenerator object (e.g., synthetmic.LeguerreDiagramGenerator).
     axis : Axis, optional
         a matplotlib axis object to handle the figure, if None, a new one will be created
     title : str or None, optional
         title of the figure.
-    colorby : ndarray or list, shape (N,), optional
+    colorby : FloatArray, shape (N,), optional
         a 1d array of scalars for coloring the cells, if None, the cells will be colored
         by their respective volume.
-    colormap: str, optional
+    colormap : str, optional
         a string representing one of the supported colormaps in the matplotlib library.
-    save_path: str or None
+    save_path : str or None
         a string reperesenting the path to save the generated figure to, e.g., ./plots/figure2.pdf.
         If None, figure will not be saved.
 
     Returns
     -------
-
     ax : matplotlib Axes object
     """
     with tempfile.NamedTemporaryFile(mode="w", suffix=".vtk", delete=True) as tmp_file:
         filename = tmp_file.name
 
-        generator.diagram_to_vtk(filename)
+        generator.to_vtk(filename)
 
         reader = vtk.vtkUnstructuredGridReader()
         reader.SetFileName(filename)
@@ -89,8 +88,9 @@ def plot_2dcells_as_matplotlib_fig(
         # default to coloring cells by their volumes
         colorby = generator.get_fitted_volumes()
 
+    colorby = np.asarray(colorby)
     cmap = cm.get_cmap(colormap)
-    norm = mcolors.Normalize(vmin=np.min(colorby), vmax=np.max(colorby))
+    norm = mcolors.Normalize(vmin=colorby.min(), vmax=colorby.max())
     colors = cmap(norm(colorby))
 
     idx = 0
@@ -108,7 +108,7 @@ def plot_2dcells_as_matplotlib_fig(
         )
 
     idx = 0
-    for k in range(N):
+    for _ in range(N):
         nv = cells[idx]
         vidx = cells[idx + 1 : idx + nv + 1]
         idx = idx + nv + 1
@@ -131,7 +131,7 @@ def plot_cells_as_pyvista_fig(
     window_size: tuple[int, int] = (1024, 768),
     notebook: bool = False,
     title: str | None = None,
-    colorby: np.ndarray | list[float] | None = None,
+    colorby: FloatArray | None = None,
     colormap: str = "plasma",
     save_path: str | Path | None = None,
     include_slices: bool = False,
@@ -141,7 +141,6 @@ def plot_cells_as_pyvista_fig(
 
     Parameters
     ----------
-
     generator : LaguerreDiagramGenerator
         a fitted DiagramGenerator object (e.g., LeguerreDiagramGenerator).
     window_size : tuple[int, int], optional
@@ -151,12 +150,12 @@ def plot_cells_as_pyvista_fig(
         Automatically enables off_screen.
     title : str or None, optional
         title of the figure.
-    colorby : ndarray or list, shape (N,), optional
+    colorby : FloatArray, shape (N,), optional
         a 1d array of scalars for coloring the cells, if None, the cells will be colored
         by their respective volume.
-    colormap: str, optional
+    colormap : str, optional
         a string representing one of the supported colormaps in the matplotlib library.
-    save_path: str or None
+    save_path : str or None
         a string reperesenting the path to save the generated figure to, e.g., ./plots/figure2.pdf.
         If None, figure will not be saved. File extension must be one of the supported extensions in
         pyvista.
@@ -165,8 +164,7 @@ def plot_cells_as_pyvista_fig(
 
     Returns
     -------
-
-    plotter : pyvista Plotter object
+    plotter : pyvista.Plotter
     """
     mesh = generator.get_mesh()
 
@@ -240,8 +238,6 @@ def plot_cells_as_pyvista_fig(
 
     if title is not None:
         plotter.add_title(title=title)
-
-    plotter.show_axes()
 
     if save_path is not None:
         ext = str(save_path).split(".")[-1].lower()
