@@ -9,11 +9,9 @@ import pyvista as pv
 from damask import Rotation
 from pysdot import OptimalTransport, PowerDiagram
 
-from synthetmic._deprecated import warn_deprecated
 from synthetmic._errors import check_is_fitted
 from synthetmic._validate import check_generator_config
 from synthetmic.data.utils import DiagramConfig, VoxelGrid
-from synthetmic.types import DEPRECATED, MissingType
 from synthetmic.typing import FloatArray, IntSequence
 from synthetmic.utils import (
     add_replicants,
@@ -98,14 +96,6 @@ class DiagramGenerator(ABC):
     pd_: PowerDiagram
     space_dim_in_: int
     n_grains_in_: int
-
-    def __init__(self, verbose: bool | MissingType = DEPRECATED) -> None:
-        if not isinstance(verbose, MissingType):
-            warn_deprecated(
-                "The `verbose` argument is deprecated and has no effect. "
-                "It will be removed in a future release. Please pass a "
-                "callback to to the `fit` method."
-            )
 
     @abstractmethod
     def fit(
@@ -357,19 +347,13 @@ class VoronoiDiagramGenerator(DiagramGenerator):
         and the corresponding cell centroids.
     """
 
-    def __init__(
-        self,
-        n_iter: int = 5,
-        damp_param: float = 1.0,
-        verbose: bool | MissingType = DEPRECATED,
-    ) -> None:
+    def __init__(self, n_iter: int = 5, damp_param: float = 1.0) -> None:
         check_generator_config(
             tol=None,
             n_iter=n_iter,
             damp_param=damp_param,
         )
 
-        super().__init__(verbose=verbose)
         self.n_iter = n_iter
         self.damp_param = damp_param
 
@@ -477,20 +461,13 @@ class LaguerreDiagramGenerator(DiagramGenerator):
         and the corresponding cell centroids.
     """
 
-    def __init__(
-        self,
-        tol: float = 1.0,
-        n_iter: int = 5,
-        damp_param: float = 1.0,
-        verbose: bool | MissingType = DEPRECATED,
-    ):
+    def __init__(self, tol: float = 1.0, n_iter: int = 5, damp_param: float = 1.0):
         check_generator_config(
             tol=tol,
             n_iter=n_iter,
             damp_param=damp_param,
         )
 
-        super().__init__(verbose=verbose)
         self.tol = tol
         self.n_iter = n_iter
         self.damp_param = damp_param
