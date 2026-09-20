@@ -1845,12 +1845,12 @@ wheels = [
 
 [[package]]
 name = "pysdot"
-version = "0.2.38"
+version = "0.2.39"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/db/17/37ccb9f4d1a1910648fc6e01f6d43ae3daae327e8b22dc37c2953dc75da5/pysdot-0.2.38.tar.gz", hash = "sha256:9cdd2368f3765ada0d6f4e29792abd546eaf0a649c2f63a414edec07e981d5fb", size = 32754, upload-time = "2025-07-30T09:10:20.395Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/b3/60c31cc65b8d66d005c2177ec4380ae7a9a3b26811766b7bfd14eeebf98c/pysdot-0.2.39.tar.gz", hash = "sha256:56d3ef856645d2ead0fbe8897ef5c16070930bf91e219f9bc6e23cedfb4dd1e8", size = 32717, upload-time = "2026-09-02T11:27:00.184Z" }
 
 [[package]]
 name = "pytest"
@@ -2308,7 +2308,7 @@ requires-dist = [
     { name = "joblib", specifier = ">=1.5.3" },
     { name = "matplotlib", specifier = ">=3.10.3" },
     { name = "numpy", specifier = ">=2.3.0" },
-    { name = "pysdot", specifier = "==0.2.38" },
+    { name = "pysdot", specifier = "==0.2.39" },
     { name = "pyvista", extras = ["jupyter"], specifier = ">=0.45.2" },
     { name = "scipy", specifier = ">=1.15.3" },
     { name = "vtk", specifier = ">=9.4.2" },

@@ -6,7 +6,6 @@ from pysdot.domain_types import ConvexPolyhedraAssembly
 
 from synthetmic import _data as dt
 from synthetmic import _validate as vd
-from synthetmic._deprecated import warn_deprecated
 from synthetmic.typing import (
     BoolSequence,
     FloatArray,
@@ -154,27 +153,6 @@ def assign_points_to_grains(
         all_points=lifted_positions,
         workers=n_jobs,
         boxsize=tuple(boxsize),
-    )
-
-
-def mesh_diagram(
-    points: FloatArray,
-    pd: PowerDiagram,
-    domain: FloatArray | None = None,
-    n_jobs: int = -1,
-) -> IntArray:
-    """
-    Deprecated. Use `synthetmic.utils.assign_points_to_cells` instead.
-    """
-    warn_deprecated(
-        "`synthetmic.utils.mesh_diagram` is deprecated and will be removed in a future "
-        "release. Please use `synthetmic.utils.assign_points_to_grains` instead."
-    )
-    return assign_points_to_grains(
-        points=points,
-        pd=pd,
-        domain=domain,
-        n_jobs=n_jobs,
     )
 
 
