@@ -63,7 +63,5 @@ exclude = [
     "/.github",
     "/tests",
     "/examples",
-    "/assets",
-    "/dev",
     "cli.py",
 ]

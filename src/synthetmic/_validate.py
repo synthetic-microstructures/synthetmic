@@ -2,7 +2,7 @@ from typing import Any, Callable, Type
 
 import numpy as np
 
-from synthetmic.typing import BoolSequence, FloatArray, IntArray, NumericArray, StrArray
+from synthetmic.typing import BoolSequence, FloatArray, IntArray, NumericArray
 
 
 def check_space_dim(
@@ -20,7 +20,7 @@ def check_space_dim(
 
 def check_num_samples(
     seeds: FloatArray,
-    phases: IntArray | StrArray,
+    phases: IntArray,
     initial_weights: FloatArray,
     volumes: FloatArray,
 ) -> None:
@@ -53,7 +53,7 @@ def check_volumes(
     if volumes is None:
         volumes = np.ones(n_grains) * total_volume / n_grains
 
-    _TOTAL_VOL_TOL = 10e-6
+    _TOTAL_VOL_TOL = 1e-6
     if abs(volumes.sum() - total_volume) > _TOTAL_VOL_TOL:
         raise ValueError(
             f"Total volume difference is greater than tolerance: {_TOTAL_VOL_TOL}."
@@ -61,7 +61,7 @@ def check_volumes(
 
     compose_rules(
         is_instance(np.ndarray),
-        check_array(allowed_types=[float, int], allowed_ndims=[1]),
+        check_array(allowed_type=np.number, allowed_ndims=[1]),
     )(volumes, "volumes")
 
     return volumes
@@ -74,7 +74,7 @@ def check_initial_weights(
         initial_weights = np.zeros(n_grains, dtype=float)
         compose_rules(
             is_instance(np.ndarray),
-            check_array(allowed_types=[float, int], allowed_ndims=[1]),
+            check_array(allowed_type=np.number, allowed_ndims=[1]),
         )(initial_weights, "initial_weights")
 
     return initial_weights
@@ -83,7 +83,7 @@ def check_initial_weights(
 def check_seeds(seeds: FloatArray, domain: FloatArray) -> None:
     compose_rules(
         is_instance(np.ndarray),
-        check_array(allowed_types=[float, int], allowed_ndims=[2, 3]),
+        check_array(allowed_type=np.number, allowed_ndims=[2, 3]),
     )(seeds, "seeds")
     check_points(seeds)
 
@@ -102,19 +102,20 @@ def check_seeds(seeds: FloatArray, domain: FloatArray) -> None:
 def check_domain(domain: FloatArray) -> None:
     compose_rules(
         is_instance(np.ndarray),
-        check_array(allowed_types=[float, int], allowed_shapes=[(2, 2), (3, 2)]),
+        check_array(
+            allowed_type=np.number,
+            allowed_shapes=[(2, 2), (3, 2)],
+        ),
     )(domain, "domain")
 
 
-def check_phases(
-    phases: IntArray | StrArray | None, n_grains: int
-) -> IntArray | StrArray:
+def check_phases(phases: IntArray | None, n_grains: int) -> IntArray:
     if phases is None:
         phases = np.zeros(n_grains, dtype=int)
 
     compose_rules(
         is_instance(np.ndarray),
-        check_array(allowed_types=[int, str], allowed_ndims=[1]),
+        check_array(allowed_type=np.integer, allowed_ndims=[1]),
     )(phases, "phases")
 
     return phases
@@ -126,12 +127,14 @@ def check_generator_config(
     damp_param: float,
 ) -> None:
     if tol is not None:
-        compose_rules(is_instance(int, float), gt(rhs=0.0))(tol, "tol")
+        compose_rules(is_instance(int, float, np.integer, np.floating), gt(rhs=0.0))(
+            tol, "tol"
+        )
 
-    compose_rules(is_instance(int), gte(rhs=0))(n_iter, "n_iter")
-    compose_rules(is_instance(int, float), between(left=0.0, right=1.0))(
-        damp_param, "damp_param"
-    )
+    compose_rules(is_instance(int, np.integer), gte(rhs=0))(n_iter, "n_iter")
+    compose_rules(
+        is_instance(int, float, np.integer, np.floating), between(left=0.0, right=1.0)
+    )(damp_param, "damp_param")
 
 
 def check_points(points: FloatArray) -> None:
@@ -225,7 +228,7 @@ def compose_rules(*args) -> Callable:
 
 
 def check_array(
-    allowed_types: list[Type],
+    allowed_type: Type,
     allowed_shapes: list[tuple[int, int]] | None = None,
     allowed_ndims: list[int] | None = None,
 ) -> Callable[[NumericArray, str], None]:
@@ -233,9 +236,9 @@ def check_array(
         if x.size == 0:
             raise ValueError(f"{name} is empty. Input required a non-empty ndarray.")
 
-        if x.dtype not in allowed_types:
+        if not np.issubdtype(x.dtype, allowed_type):
             raise ValueError(
-                f"{name} contain elements of wrong type {x.dtype}. Allowed types are {allowed_types}."
+                f"{name} contain elements of wrong type {x.dtype}. Allowed type is {allowed_type}."
             )
 
         if allowed_shapes is not None:

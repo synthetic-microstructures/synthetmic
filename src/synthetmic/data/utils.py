@@ -9,7 +9,6 @@ from synthetmic.typing import (
     FloatArray,
     FloatSequence,
     IntArray,
-    StrArray,
 )
 
 
@@ -21,15 +20,15 @@ class GrainData:
     Attributes
     ----------
     orientations : FloatArray
-        Grain orientations.
-    phases : IntArray or StrArray
-        Grain phases
+        Grain orientations as an array of quarternions, shape (N,4).
+    phases : IntArray
+        Grain phase IDs, shape (N,)
     volumes : FloatArray
-        Grain volumes.
+        Grain volumes, shape (N,)
     """
 
     orientations: FloatArray
-    phases: IntArray | StrArray
+    phases: IntArray
     volumes: FloatArray
 
     def __post_init__(self):
@@ -118,8 +117,8 @@ class DiagramConfig:
         (d=2,3).
     seeds : FloatArray, shape (N,d)
         Locations of the N seeds.
-    phases : IntArray or StrArray shape (N,) or None, optional
-        Phases of the N cells. If None, will be initialised to
+    phases : IntArray (N,) or None, optional
+        Phase IDs of the N cells. If None, will be initialised to
         an array of zeros.
     periodic : BoolSequence or None, optional, length d
         Sequence of bool indicating whether or not the domain is periodic in
@@ -134,7 +133,7 @@ class DiagramConfig:
 
     domain: FloatArray
     seeds: FloatArray
-    phases: IntArray | StrArray
+    phases: IntArray
     periodic: BoolSequence
     volumes: FloatArray
     initial_weights: FloatArray
@@ -143,7 +142,7 @@ class DiagramConfig:
         self,
         domain: FloatArray,
         seeds: FloatArray,
-        phases: IntArray | StrArray | None = None,
+        phases: IntArray | None = None,
         periodic: BoolSequence | None = None,
         volumes: FloatArray | None = None,
         initial_weights: FloatArray | None = None,
@@ -208,7 +207,7 @@ class DiagramConfig:
 
         self.seeds = seeds
 
-    def set_phases(self, phases: IntArray | StrArray | None) -> None:
+    def set_phases(self, phases: IntArray | None) -> None:
         """
         Set to new phases.
         """

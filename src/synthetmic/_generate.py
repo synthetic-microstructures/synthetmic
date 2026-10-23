@@ -1,6 +1,7 @@
 import tempfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Any, Callable, Self
 
@@ -12,13 +13,20 @@ from pysdot import OptimalTransport, PowerDiagram
 from synthetmic._errors import check_is_fitted
 from synthetmic._validate import check_generator_config
 from synthetmic.data.utils import DiagramConfig, VoxelGrid
-from synthetmic.typing import FloatArray, IntSequence
+from synthetmic.typing import FloatArray, IntArray, IntSequence
 from synthetmic.utils import (
     add_replicants,
     assign_points_to_grains,
     build_domain,
     compute_cell_centers,
 )
+
+
+class Colorby(StrEnum):
+    VOLUME = auto()
+    PHASE = auto()
+    RANDOM = auto()
+    ERROR = auto()
 
 
 @dataclass(frozen=True, slots=True)
@@ -324,6 +332,86 @@ class DiagramGenerator(ABC):
             raise ValueError("filename suffix must be .vtk")
 
         self.pd_.display_vtk(filename=filename, points=False, centroids=False)
+
+    def plot(
+        self,
+        colorby: str = "volume",
+        target_volumes: FloatArray | None = None,
+        phases: IntArray | None = None,
+        colormap: str = "tab20",
+        opacity: float = 1.0,
+        show_edges: bool = True,
+        show_scalar_bar: bool = True,
+        show_positions: bool = False,
+        show_plot: bool = True,
+    ) -> pv.Plotter:
+        check_is_fitted(self, ["pd_"])
+
+        if colorby not in Colorby:
+            raise ValueError(
+                f"Invalid colorby: {colorby}. Value must be one of {', '.join(Colorby)}"
+            )
+
+        fitted_volumes = self.get_fitted_volumes()
+
+        match colorby:
+            case Colorby.ERROR:
+                if target_volumes is None:
+                    raise ValueError(
+                        f"target_volumes must be provided if colorby is {colorby}."
+                    )
+
+                target_volumes = np.asarray(target_volumes)
+                scalars = np.abs(fitted_volumes - target_volumes) * 100 / target_volumes
+
+            case Colorby.PHASE:
+                if phases is None:
+                    raise ValueError(
+                        f"phases must be provided if colorby is {colorby}."
+                    )
+                scalars = np.asarray(phases, dtype=float)
+
+            case Colorby.VOLUME:
+                scalars = fitted_volumes
+
+            case Colorby.RANDOM:
+                scalars = np.random.rand(fitted_volumes.shape[0])
+
+        mesh = self.get_mesh()
+        mesh.cell_data[colorby] = scalars[mesh.cell_data["num"].astype(int)]
+        clim = scalars.min(), scalars.max()
+
+        plotter = pv.Plotter(off_screen=True, notebook=False)
+        plotter.add_mesh(
+            mesh,
+            scalars=colorby,
+            clim=clim,
+            show_edges=show_edges,
+            show_scalar_bar=show_scalar_bar,
+            lighting=False,
+            cmap=colormap,
+            opacity=opacity,
+        )
+
+        if show_positions:
+            positions = self.get_positions()
+            n_samples, space_dim = positions.shape
+            if space_dim == 2:
+                positions = np.column_stack((positions, np.zeros(n_samples)))
+            plotter.add_points(
+                points=positions,
+                render_points_as_spheres=True,
+                color="black",
+                point_size=5,
+            )
+
+        if self.space_dim_in_ == 2:
+            plotter.camera_position = "xy"
+
+        if show_plot:
+            plotter.show(interactive=False)
+
+        return plotter
 
 
 class VoronoiDiagramGenerator(DiagramGenerator):
